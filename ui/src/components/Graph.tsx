@@ -18,22 +18,22 @@ import "@xyflow/react/dist/style.css";
 import type { GraphNode, GraphEdge } from "../App";
 
 // Custom node component
-const CodexNode = ({ data, selected }: { data: GraphNode["data"]; selected: boolean }) => {
-  const typeClass = `codex-node-${data.nodeType}`;
+const NodexNode = ({ data, selected }: { data: GraphNode["data"]; selected: boolean }) => {
+  const typeClass = `nodex-node-${data.nodeType}`;
   return (
-    <div className={`codex-node ${typeClass} ${selected ? "selected" : ""}`}>
+    <div className={`nodex-node ${typeClass} ${selected ? "selected" : ""}`}>
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
-      <div className="codex-node-label">{data.label}</div>
-      <div className="codex-node-meta">{data.file.split("/").slice(-1)[0]}</div>
+      <div className="nodex-node-label">{data.label}</div>
+      <div className="nodex-node-meta">{data.file.split("/").slice(-1)[0]}</div>
       {data.complexity > 3 && (
-        <div className="codex-node-complexity">cx:{data.complexity}</div>
+        <div className="nodex-node-complexity">cx:{data.complexity}</div>
       )}
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
     </div>
   );
 };
 
-const NODE_TYPES: NodeTypes = { codexNode: CodexNode as any };
+const NODE_TYPES: NodeTypes = { nodexNode: NodexNode as any };
 
 function autoLayout(nodes: RFNode[], edges: RFEdge[]): RFNode[] {
   if (nodes.length === 0) return nodes;
@@ -155,7 +155,7 @@ function GraphViewInner({ searchQuery, selectedNodeId, impactNodeId, onNodeSelec
       <div style={centerStyle}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
           <div style={{ color: "var(--foreground)", fontFamily: "ui-monospace, monospace", fontWeight: 600 }}>No index found</div>
-          <div style={{ color: "var(--muted-foreground)", fontSize: 13, fontFamily: "ui-monospace, monospace" }}>Run: codex init</div>
+          <div style={{ color: "var(--muted-foreground)", fontSize: 13, fontFamily: "ui-monospace, monospace" }}>Run: nodex init</div>
         </div>
       </div>
     );

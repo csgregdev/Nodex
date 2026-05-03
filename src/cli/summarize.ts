@@ -9,7 +9,7 @@ import { join } from "node:path";
 export async function runSummarize(args: string[]) {
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error("Error: ANTHROPIC_API_KEY environment variable not set");
-    console.error("Set it in .env or export it before running codex summarize");
+    console.error("Set it in .env or export it before running nodex summarize");
     process.exit(1);
   }
 
@@ -70,11 +70,11 @@ export async function runSummarize(args: string[]) {
   }
 
   if (toSummarize.length === 0) {
-    console.log("Codex: All modules up to date. Nothing to summarize.");
+    console.log("Nodex: All modules up to date. Nothing to summarize.");
     return;
   }
 
-  console.log(`Codex: Summarizing ${toSummarize.length} modules with Claude Haiku...`);
+  console.log(`Nodex: Summarizing ${toSummarize.length} modules with Claude Haiku...`);
 
   let done = 0;
 
@@ -104,11 +104,11 @@ export async function runSummarize(args: string[]) {
     }
   }
 
-  console.log(`\nCodex: Done. ${done} modules summarized.`);
+  console.log(`\nNodex: Done. ${done} modules summarized.`);
 
   // Regenerate context.md with AI data
   await regenerateContextMd(root);
-  console.log(`  Updated: ${join(root, ".codex", "context.md")}`);
+  console.log(`  Updated: ${join(root, ".nodex", "context.md")}`);
 }
 
 async function regenerateContextMd(root: string) {
@@ -126,7 +126,7 @@ async function regenerateContextMd(root: string) {
   }
 
   const lines = [
-    "# Codex Context (AI Enhanced)",
+    "# Nodex Context (AI Enhanced)",
     `Generated: ${new Date().toISOString()}`,
     `Files: ${byFile.size} | Symbols: ${nodes.filter(n => !n.id.endsWith("::__module__")).length} | Edges: ${edges.length}`,
     "",
@@ -158,5 +158,5 @@ async function regenerateContextMd(root: string) {
     lines.push("");
   }
 
-  await Bun.write(join(root, ".codex", "context.md"), lines.join("\n"));
+  await Bun.write(join(root, ".nodex", "context.md"), lines.join("\n"));
 }

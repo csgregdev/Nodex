@@ -3,7 +3,7 @@ import { getNode } from "../../store/nodes.ts";
 import { addMeta } from "../../store/meta.ts";
 
 export const decisionToolDef = {
-  name: "codex_add_decision",
+  name: "nodex_add_decision",
   description: "Record an architectural decision or gotcha about a node for future AI context",
   inputSchema: {
     type: "object" as const,

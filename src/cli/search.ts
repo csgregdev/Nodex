@@ -4,7 +4,7 @@ import { searchNodes } from "../store/nodes.ts";
 export async function runSearch(args: string[]) {
   const query = args.join(" ");
   if (!query) {
-    console.log("Usage: codex search <query>");
+    console.log("Usage: nodex search <query>");
     return;
   }
 

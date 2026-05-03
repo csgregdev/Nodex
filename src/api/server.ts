@@ -23,7 +23,7 @@ export function startAPIServer(root: string, port = 3456) {
     // react-flow format
     const rfNodes = nodes.map(n => ({
       id: n.id,
-      type: "codexNode",
+      type: "nodexNode",
       data: {
         label: n.name,
         summary: n.summary,

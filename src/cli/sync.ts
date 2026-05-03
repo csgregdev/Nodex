@@ -20,7 +20,7 @@ export async function runSync(args: string[]) {
       const result = await Bun.$`git -C ${root} diff --name-only`.text();
       gitOutput = result;
     } catch (err) {
-      console.error("Codex: git diff failed. Is this a git repo?", err);
+      console.error("Nodex: git diff failed. Is this a git repo?", err);
       process.exit(1);
     }
   }
@@ -28,11 +28,11 @@ export async function runSync(args: string[]) {
   const changedFiles = gitOutput.trim().split("\n").filter(Boolean);
 
   if (changedFiles.length === 0) {
-    console.log("Codex: No changed files found.");
+    console.log("Nodex: No changed files found.");
     return;
   }
 
-  console.log(`Codex: Syncing ${changedFiles.length} changed files...`);
+  console.log(`Nodex: Syncing ${changedFiles.length} changed files...`);
   let indexed = 0;
 
   for (const file of changedFiles) {
@@ -54,5 +54,5 @@ export async function runSync(args: string[]) {
     }
   }
 
-  console.log(`Codex: Done. ${indexed} files synced.`);
+  console.log(`Nodex: Done. ${indexed} files synced.`);
 }

@@ -1,5 +1,5 @@
 
-# Codex
+# Nodex
 
 Élő, gráf-alapú kódbázis tudástár CLI fejlesztőknek és AI tooloknak.
 
@@ -79,22 +79,22 @@ Framework detekció: Next.js (`"use client"`, page/layout/route fájlok), Flutte
 
 ## MCP tools
 
-- `codex_search(query)` — szimbólum keresés
-- `codex_get_context(file)` — fájl összes node/edge/meta
-- `codex_impact_map(node_id)` — mi törik el ha változtatunk
-- `codex_get_conventions()` — AI döntések, gotchák
-- `codex_update_file(file)` — fájl újraindexelése módosítás után
-- `codex_add_decision(node_id, decision)` — döntés rögzítése
+- `nodex_search(query)` — szimbólum keresés
+- `nodex_get_context(file)` — fájl összes node/edge/meta
+- `nodex_impact_map(node_id)` — mi törik el ha változtatunk
+- `nodex_get_conventions()` — AI döntések, gotchák
+- `nodex_update_file(file)` — fájl újraindexelése módosítás után
+- `nodex_add_decision(node_id, decision)` — döntés rögzítése
 
 ## MCP konfig (Claude Code)
 
 ```json
 {
   "mcpServers": {
-    "codex": {
+    "nodex": {
       "command": "bun",
-      "args": ["run", "/path/to/codex/src/mcp/server.ts"],
-      "env": { "CODEX_PROJECT": "/path/to/your/project" }
+      "args": ["run", "/path/to/nodex/src/mcp/server.ts"],
+      "env": { "NODEX_PROJECT": "/path/to/your/project" }
     }
   }
 }

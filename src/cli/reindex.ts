@@ -9,6 +9,6 @@ export async function runReindex(args: string[]) {
   db.run("DELETE FROM nodes");
   db.run("DELETE FROM meta WHERE key != 'root_path'");
 
-  console.log("Codex: Full reindex (cleared existing index)");
+  console.log("Nodex: Full reindex (cleared existing index)");
   await runInit([]);
 }

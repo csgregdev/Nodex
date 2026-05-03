@@ -19,11 +19,11 @@ const TOOLS = [
 ];
 
 async function main() {
-  const projectRoot = process.env.CODEX_PROJECT ?? process.cwd();
+  const projectRoot = process.env.NODEX_PROJECT ?? process.cwd();
   initDB(projectRoot);
 
   const server = new Server(
-    { name: "codex", version: "0.3.0" },
+    { name: "nodex", version: "0.3.0" },
     { capabilities: { tools: {} } }
   );
 
@@ -37,12 +37,12 @@ async function main() {
     try {
       let result: unknown;
       switch (name) {
-        case "codex_search":      result = searchTool(args); break;
-        case "codex_get_context": result = contextTool(args); break;
-        case "codex_impact_map":  result = impactTool(args); break;
-        case "codex_get_conventions": result = conventionsTool(args); break;
-        case "codex_update_file": result = await updateTool(args); break;
-        case "codex_add_decision": result = decisionTool(args); break;
+        case "nodex_search":      result = searchTool(args); break;
+        case "nodex_get_context": result = contextTool(args); break;
+        case "nodex_impact_map":  result = impactTool(args); break;
+        case "nodex_get_conventions": result = conventionsTool(args); break;
+        case "nodex_update_file": result = await updateTool(args); break;
+        case "nodex_add_decision": result = decisionTool(args); break;
         default: throw new Error(`Unknown tool: ${name}`);
       }
 
@@ -59,10 +59,10 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("[codex-mcp] Server running. Project:", projectRoot);
+  console.error("[nodex-mcp] Server running. Project:", projectRoot);
 }
 
 main().catch(err => {
-  console.error("[codex-mcp] Fatal:", err);
+  console.error("[nodex-mcp] Fatal:", err);
   process.exit(1);
 });

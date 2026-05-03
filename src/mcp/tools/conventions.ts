@@ -2,7 +2,7 @@ import { getProject } from "../../store/meta.ts";
 import { getDB } from "../../store/db.ts";
 
 export const conventionsToolDef = {
-  name: "codex_get_conventions",
+  name: "nodex_get_conventions",
   description: "Get project conventions, naming patterns, and recorded AI decisions",
   inputSchema: {
     type: "object" as const,

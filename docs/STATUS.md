@@ -1,4 +1,4 @@
-# Codex — Fejlesztési Státusz
+# Nodex — Fejlesztési Státusz
 
 Utoljára frissítve: 2026-05-03
 
@@ -29,11 +29,11 @@ Utoljára frissítve: 2026-05-03
 - [x] `src/store/edges.ts` — CRUD
 - [x] `src/store/meta.ts` — CRUD + project k/v
 - [x] `src/cli/main.ts` — CLI dispatcher
-- [x] `codex init` — teljes indexelés, context.md generálás
-- [x] `codex reindex` — DB törlés + újraindexelés
-- [x] `codex search <query>` — terminál keresés
+- [x] `nodex init` — teljes indexelés, context.md generálás
+- [x] `nodex reindex` — DB törlés + újraindexelés
+- [x] `nodex search <query>` — terminál keresés
 
-**Eredmény:** `codex init` indexel ~36 fájlt, ~113 szimbólumot (saját magán tesztelve)
+**Eredmény:** `nodex init` indexel ~36 fájlt, ~113 szimbólumot (saját magán tesztelve)
 
 ---
 
@@ -42,7 +42,7 @@ Utoljára frissítve: 2026-05-03
 - [x] `src/summarizer/ai.ts` — Claude Haiku (claude-haiku-4-5-20251001), batch 3 concurrent, 500ms delay
 - [x] `src/summarizer/cache.ts` — hash alapú skip (last_ai + hash összehasonlítás)
 - [x] `src/summarizer/formatter.ts` — local token formázó (calls/usedBy edge info)
-- [x] `src/cli/summarize.ts` — `codex summarize` parancs
+- [x] `src/cli/summarize.ts` — `nodex summarize` parancs
 - [x] context.md frissítés AI adatokkal (summary + gotchák)
 - [x] meta táblába gotchák + ai_decisions mentése
 
@@ -57,16 +57,16 @@ bun src/cli/main.ts summarize
 ## v0.3 — Live Watch + MCP ✅
 
 - [x] `src/watcher/fswatch.ts` — chokidar v5, 500ms debounce, hash check, optional AI re-summarize
-- [x] `src/cli/watch.ts` — `codex watch`
-- [x] `src/cli/sync.ts` — `codex sync` (git diff --name-only alapú)
+- [x] `src/cli/watch.ts` — `nodex watch`
+- [x] `src/cli/sync.ts` — `nodex sync` (git diff --name-only alapú)
 - [x] `src/mcp/server.ts` — MCP stdio server (@modelcontextprotocol/sdk v1.29)
-- [x] `codex_search` — szimbólum keresés
-- [x] `codex_get_context` — fájl összes node/edge/meta
-- [x] `codex_impact_map` — direkt + indirekt hatás, risk: low/medium/high
-- [x] `codex_get_conventions` — AI döntések + gotchák listája
-- [x] `codex_update_file` — fájl újraindexelése (AI hívja módosítás után)
-- [x] `codex_add_decision` — döntés/gotcha rögzítése
-- [x] `.codex/CLAUDE.md` — MCP tool usage sablon generálás (codex init futtatásakor)
+- [x] `nodex_search` — szimbólum keresés
+- [x] `nodex_get_context` — fájl összes node/edge/meta
+- [x] `nodex_impact_map` — direkt + indirekt hatás, risk: low/medium/high
+- [x] `nodex_get_conventions` — AI döntések + gotchák listája
+- [x] `nodex_update_file` — fájl újraindexelése (AI hívja módosítás után)
+- [x] `nodex_add_decision` — döntés/gotcha rögzítése
+- [x] `.nodex/CLAUDE.md` — MCP tool usage sablon generálás (nodex init futtatásakor)
 
 ---
 
@@ -78,7 +78,7 @@ bun src/cli/main.ts summarize
   - `GET /api/search?q=` — FTS keresés
   - `GET /api/impact/:id` — impact map
   - `GET /api/stats` — statisztikák
-- [x] `src/cli/ui.ts` — `codex ui` (port 3456, auto browser open)
+- [x] `src/cli/ui.ts` — `nodex ui` (port 3456, auto browser open)
 - [x] `ui/` — React SPA (Bun HTML imports, automatikus bundling)
 - [x] `Graph.tsx` — @xyflow/react, file-alapú auto layout, impact highlight
 - [x] `NodePanel.tsx` — token (copy), summary, gotchák, edges, impact gomb
@@ -118,14 +118,14 @@ bun src/cli/main.ts summarize
 
 ## v1.0 — Polish 🔲
 
-- [ ] `codex share` — statikus HTML export, megosztható link
+- [ ] `nodex share` — statikus HTML export, megosztható link
 - [ ] VS Code extension — státuszsor badge + search panel
 - [ ] Git history integráció — miért változott egy modul (`git log --follow`)
 - [ ] Dead code detektálás — node-ok amikre 0 incoming edge van
 - [ ] TODO/FIXME debt map — kód kommentekből összegyűjtve
 - [ ] Full-text search javítás — jelenleg LIKE, kellene SQLite FTS5
 - [ ] Gráf layout javítás — jelenleg egyszerű file-csoportos grid, kellene dagre/ELK
-- [ ] `codex ui --port <n>` — konfiguráció
+- [ ] `nodex ui --port <n>` — konfiguráció
 - [ ] Több projekt egyidejű kezelése
 
 ---
@@ -148,18 +148,18 @@ bun src/cli/main.ts summarize
 cd /path/to/your-project
 
 # Indexelés
-bun /path/to/codex/src/cli/main.ts init
+bun /path/to/nodex/src/cli/main.ts init
 
 # Vizuális UI
-bun /path/to/codex/src/cli/main.ts ui
+bun /path/to/nodex/src/cli/main.ts ui
 # → http://localhost:3456
 
 # Live watch
-bun /path/to/codex/src/cli/main.ts watch
+bun /path/to/nodex/src/cli/main.ts watch
 
 # AI összefoglalók
 export ANTHROPIC_API_KEY=sk-ant-...
-bun /path/to/codex/src/cli/main.ts summarize
+bun /path/to/nodex/src/cli/main.ts summarize
 
 # MCP (Claude Code-ban)
 # → lásd CLAUDE.md MCP konfig szekció

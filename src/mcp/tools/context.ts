@@ -4,7 +4,7 @@ import { getEdgesFrom, getEdgesTo } from "../../store/edges.ts";
 import { getMetaByNode } from "../../store/meta.ts";
 
 export const contextToolDef = {
-  name: "codex_get_context",
+  name: "nodex_get_context",
   description: "Get full context for a file: all its symbols, imports/exports, and AI summaries",
   inputSchema: {
     type: "object" as const,

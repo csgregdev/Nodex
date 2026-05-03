@@ -6,7 +6,7 @@ import { detectLanguage, detectFramework } from "./languages/index.ts";
 const DEFAULT_IGNORE = [
   "node_modules",
   ".git",
-  ".codex",
+  ".nodex",
   "dist",
   "build",
   ".next",

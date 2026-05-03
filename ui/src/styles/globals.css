@@ -100,7 +100,7 @@ body::before {
 .react-flow__edge-path { stroke: var(--border) !important; stroke-width: 1 !important; }
 
 /* Custom node */
-.codex-node {
+.nodex-node {
   border-radius: 2px;
   min-width: 120px;
   max-width: 200px;
@@ -113,28 +113,28 @@ body::before {
   padding: 7px 11px;
   position: relative;
 }
-.codex-node:hover { transform: translateY(-1px); }
-.codex-node-fn    { border-color: rgba(6,182,212,0.3); box-shadow: 0 0 8px rgba(0,212,255,0.08); }
-.codex-node-class { border-color: rgba(168,85,247,0.3); box-shadow: 0 0 8px rgba(168,85,247,0.08); }
-.codex-node-interface { border-color: rgba(74,222,128,0.3); box-shadow: 0 0 8px rgba(74,222,128,0.08); }
-.codex-node-module { border-color: rgba(251,191,36,0.4); background: var(--secondary); box-shadow: 0 0 12px rgba(251,191,36,0.08); }
-.codex-node-widget { border-color: rgba(251,146,60,0.3); box-shadow: 0 0 8px rgba(251,146,60,0.08); }
-.codex-node-type   { border-color: var(--border); }
-.codex-node.selected { outline: 2px solid var(--primary); outline-offset: 2px; }
-.codex-node.impact-direct   { outline: 2px solid var(--red); outline-offset: 2px; box-shadow: 0 0 20px rgba(239,68,68,0.35); }
-.codex-node.impact-indirect { outline: 2px solid var(--amber); outline-offset: 2px; box-shadow: 0 0 12px rgba(251,191,36,0.25); }
+.nodex-node:hover { transform: translateY(-1px); }
+.nodex-node-fn    { border-color: rgba(6,182,212,0.3); box-shadow: 0 0 8px rgba(0,212,255,0.08); }
+.nodex-node-class { border-color: rgba(168,85,247,0.3); box-shadow: 0 0 8px rgba(168,85,247,0.08); }
+.nodex-node-interface { border-color: rgba(74,222,128,0.3); box-shadow: 0 0 8px rgba(74,222,128,0.08); }
+.nodex-node-module { border-color: rgba(251,191,36,0.4); background: var(--secondary); box-shadow: 0 0 12px rgba(251,191,36,0.08); }
+.nodex-node-widget { border-color: rgba(251,146,60,0.3); box-shadow: 0 0 8px rgba(251,146,60,0.08); }
+.nodex-node-type   { border-color: var(--border); }
+.nodex-node.selected { outline: 2px solid var(--primary); outline-offset: 2px; }
+.nodex-node.impact-direct   { outline: 2px solid var(--red); outline-offset: 2px; box-shadow: 0 0 20px rgba(239,68,68,0.35); }
+.nodex-node.impact-indirect { outline: 2px solid var(--amber); outline-offset: 2px; box-shadow: 0 0 12px rgba(251,191,36,0.25); }
 
-.codex-node-label { color: var(--foreground); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
-.codex-node-meta  { color: var(--muted-foreground); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; }
-.codex-node-complexity { position: absolute; top: 4px; right: 6px; color: rgba(109,109,120,0.5); font-size: 8px; }
+.nodex-node-label { color: var(--foreground); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.nodex-node-meta  { color: var(--muted-foreground); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; }
+.nodex-node-complexity { position: absolute; top: 4px; right: 6px; color: rgba(109,109,120,0.5); font-size: 8px; }
 
 /* Loading dots */
-@keyframes codex-pulse { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+@keyframes nodex-pulse { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
 .loading-dot {
   width: 5px; height: 5px;
   background: var(--primary);
   border-radius: 50%;
-  animation: codex-pulse 1.2s ease infinite;
+  animation: nodex-pulse 1.2s ease infinite;
 }
 .loading-dot:nth-child(2) { animation-delay: 0.2s; }
 .loading-dot:nth-child(3) { animation-delay: 0.4s; }

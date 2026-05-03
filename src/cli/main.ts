@@ -45,17 +45,17 @@ switch (command) {
     break;
   }
   default:
-    console.log(`Codex - Live codebase knowledge graph
+    console.log(`Nodex - Live codebase knowledge graph
 
 Usage:
-  codex init              Index current project
-  codex reindex           Full reindex
-  codex search <query>    Search the index
-  codex summarize          AI summaries for all modules
-  codex watch             Auto-update on file changes
-  codex sync              Git diff based incremental update
-  codex mcp               Start MCP server (for Claude Code / AI tools)
-  codex ui                Visual graph UI (http://localhost:3456)
+  nodex init              Index current project
+  nodex reindex           Full reindex
+  nodex search <query>    Search the index
+  nodex summarize          AI summaries for all modules
+  nodex watch             Auto-update on file changes
+  nodex sync              Git diff based incremental update
+  nodex mcp               Start MCP server (for Claude Code / AI tools)
+  nodex ui                Visual graph UI (http://localhost:3456)
 
 Supported languages:
   TypeScript, JavaScript (Next.js, React, Vue, Astro)

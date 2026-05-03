@@ -1,4 +1,4 @@
-# CODEX – Teljes Projekt Terv
+# NODEX – Teljes Projekt Terv
 
 > Élő, gráf-alapú kódbázis tudástár CLI fejlesztőknek.  
 > MCP server + vizuális UI + token-optimalizált AI kontextus.
@@ -7,7 +7,7 @@
 
 ## 1. Mi ez pontosan
 
-A Codex egy háttérben futó eszköz ami:
+A Nodex egy háttérben futó eszköz ami:
 - Beolvassa a projektedet és felépít egy élő tudástárat
 - Minden modulról tudja: mit csinál, ki hívja, mi függ tőle, miért van így megírva
 - Az AI (Claude Code, Aider, bármely MCP-kompatibilis tool) ebből kérdez kontextust
@@ -20,7 +20,7 @@ A Codex egy háttérben futó eszköz ami:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    CODEX DAEMON                      │
+│                    NODEX DAEMON                      │
 │                                                      │
 │  ┌──────────┐  ┌──────────┐  ┌────────────────────┐ │
 │  │  Walker  │→ │ Parser   │→ │   Graph Builder    │ │
@@ -112,7 +112,7 @@ All languages are detected by file extension. Framework detection uses file path
 ## 4. Mappastruktúra
 
 ```
-codex/
+nodex/
 ├── src/
 │   ├── indexer/
 │   │   ├── walker.ts           # fájlrendszer bejárás, gitignore tisztelet
@@ -137,10 +137,10 @@ codex/
 │   ├── mcp/
 │   │   ├── server.ts           # MCP server belépési pont
 │   │   └── tools/
-│   │       ├── search.ts       # codex_search tool
-│   │       ├── context.ts      # codex_get_context tool
-│   │       ├── impact.ts       # codex_impact_map tool
-│   │       └── update.ts       # codex_update_file tool (AI írja)
+│   │       ├── search.ts       # nodex_search tool
+│   │       ├── context.ts      # nodex_get_context tool
+│   │       ├── impact.ts       # nodex_impact_map tool
+│   │       └── update.ts       # nodex_update_file tool (AI írja)
 │   ├── api/
 │   │   ├── server.ts           # Hono HTTP server
 │   │   └── routes/
@@ -149,10 +149,10 @@ codex/
 │   │       └── node.ts         # GET /node/:id
 │   └── cli/
 │       ├── main.ts             # belépési pont
-│       ├── init.ts             # codex init parancs
-│       ├── watch.ts            # codex watch parancs
-│       ├── sync.ts             # codex sync parancs
-│       └── reindex.ts          # codex reindex parancs
+│       ├── init.ts             # nodex init parancs
+│       ├── watch.ts            # nodex watch parancs
+│       ├── sync.ts             # nodex sync parancs
+│       └── reindex.ts          # nodex reindex parancs
 ├── ui/
 │   ├── src/
 │   │   ├── App.tsx
@@ -165,7 +165,7 @@ codex/
 │   │       ├── useGraph.ts
 │   │       └── useSearch.ts
 │   └── package.json
-├── .codex/                     # projekt-specifikus (gitignore-ba)
+├── .nodex/                     # projekt-specifikus (gitignore-ba)
 │   ├── index.db                # SQLite adatbázis
 │   └── context.md              # generált AI kontextus fájl
 ├── package.json
@@ -270,7 +270,7 @@ IUser{id:str,email:str,role:Role,createdAt:Date}
 
 ### Olvasó tools (AI kérdez)
 
-**codex_search**
+**nodex_search**
 ```typescript
 // Input
 { query: string, limit?: number }
@@ -289,7 +289,7 @@ query: "authentication login"
 → auth.service.ts::login | login(email,pass)→JWT | src/auth/auth.service.ts:23
 ```
 
-**codex_get_context**
+**nodex_get_context**
 ```typescript
 // Input
 { file: string }
@@ -303,7 +303,7 @@ query: "authentication login"
 }
 ```
 
-**codex_impact_map**
+**nodex_impact_map**
 ```typescript
 // Input
 { node_id: string }
@@ -316,7 +316,7 @@ query: "authentication login"
 }
 ```
 
-**codex_get_conventions**
+**nodex_get_conventions**
 ```typescript
 // Input - nincs
 
@@ -330,7 +330,7 @@ query: "authentication login"
 
 ### Író tools (AI frissít)
 
-**codex_update_file**
+**nodex_update_file**
 ```typescript
 // Input
 { file: string }
@@ -339,7 +339,7 @@ query: "authentication login"
 // Az AI ezt hívja minden fájlmódosítás után
 ```
 
-**codex_add_decision**
+**nodex_add_decision**
 ```typescript
 // Input
 { node_id: string, decision: string }
@@ -354,9 +354,9 @@ query: "authentication login"
 
 ### Init folyamat
 ```
-codex init
+nodex init
     │
-    ├─ 1. Config létrehozás (.codex/config.json)
+    ├─ 1. Config létrehozás (.nodex/config.json)
     │
     ├─ 2. Fájl discovery (walker.ts)
     │      - gitignore tisztelet
@@ -382,7 +382,7 @@ codex init
     │
     └─ 5. context.md generálás
            Token-optimalizált összefoglaló
-           → .codex/context.md
+           → .nodex/context.md
 ```
 
 ### Watch folyamat
@@ -406,9 +406,9 @@ Fájl változás (chokidar)
 
 ### Sync folyamat (git alapú)
 ```
-codex sync
+nodex sync
     │
-    ├─ git diff --name-only HEAD~1  (vagy utolsó codex run óta)
+    ├─ git diff --name-only HEAD~1  (vagy utolsó nodex run óta)
     │
     ├─ Csak a változott fájlok re-indexelése
     │
@@ -503,14 +503,14 @@ GET  /api/stats              → projekt statisztikák
 ## 11. CLI Parancsok
 
 ```bash
-codex init                    # első indexelés
-codex watch                   # háttérben futó auto-frissítés
-codex sync                    # git diff alapú frissítés
-codex reindex                 # teljes újraindexelés
-codex search "auth login"     # keresés a terminálból
-codex impact src/auth/auth.service.ts::login  # impact map
-codex ui                      # elindítja a vizuális UI-t
-codex share                   # (v1.0) megosztható link generálás
+nodex init                    # első indexelés
+nodex watch                   # háttérben futó auto-frissítés
+nodex sync                    # git diff alapú frissítés
+nodex reindex                 # teljes újraindexelés
+nodex search "auth login"     # keresés a terminálból
+nodex impact src/auth/auth.service.ts::login  # impact map
+nodex ui                      # elindítja a vizuális UI-t
+nodex share                   # (v1.0) megosztható link generálás
 ```
 
 ---
@@ -519,28 +519,28 @@ codex share                   # (v1.0) megosztható link generálás
 
 ### CLAUDE.md-be kerül:
 ```markdown
-## Codex Index
-Ez a projekt Codex indexelést használ. Minden fájlmódosítás után
-hívd meg: codex_update_file({ file: "módosított/fájl.ts" })
+## Nodex Index
+Ez a projekt Nodex indexelést használ. Minden fájlmódosítás után
+hívd meg: nodex_update_file({ file: "módosított/fájl.ts" })
 
 A kontextushoz használd:
-- codex_search(query) - függvények, modulok keresése
-- codex_get_context(file) - egy fájl teljes kontextusa
-- codex_impact_map(node_id) - mi törik el ha változtatok valamit
-- codex_add_decision(node_id, decision) - döntés rögzítése
+- nodex_search(query) - függvények, modulok keresése
+- nodex_get_context(file) - egy fájl teljes kontextusa
+- nodex_impact_map(node_id) - mi törik el ha változtatok valamit
+- nodex_add_decision(node_id, decision) - döntés rögzítése
 
-Aktuális projekt összefoglaló: .codex/context.md
+Aktuális projekt összefoglaló: .nodex/context.md
 ```
 
 ### MCP config (claude_desktop_config.json):
 ```json
 {
   "mcpServers": {
-    "codex": {
+    "nodex": {
       "command": "bun",
-      "args": ["run", "/path/to/codex/src/mcp/server.ts"],
+      "args": ["run", "/path/to/nodex/src/mcp/server.ts"],
       "env": {
-        "CODEX_PROJECT": "/path/to/your/project"
+        "NODEX_PROJECT": "/path/to/your/project"
       }
     }
   }
@@ -559,7 +559,7 @@ Aktuális projekt összefoglaló: .codex/context.md
 ✅ Walker + fájl discovery
 ✅ Alap call graph építés
 ✅ context.md generálás (AI nélkül, csak struktúra)
-✅ codex init + codex reindex CLI parancsok
+✅ nodex init + nodex reindex CLI parancsok
 ```
 
 ### v0.2 – AI Réteg (1-2 hét)
@@ -577,7 +577,7 @@ Aktuális projekt összefoglaló: .codex/context.md
 ✅ chokidar file watcher
 ✅ Inkrementális frissítés
 ✅ MCP server: search, context, impact, update tools
-✅ codex watch parancs
+✅ nodex watch parancs
 ✅ CLAUDE.md sablon generálás
 ```
 
@@ -586,7 +586,7 @@ Aktuális projekt összefoglaló: .codex/context.md
 ✅ Hono HTTP API
 ✅ React + react-flow alapú gráf
 ✅ NodePanel, SearchBar, ImpactOverlay
-✅ codex ui parancs (elindítja a szervert + megnyitja a böngészőt)
+✅ nodex ui parancs (elindítja a szervert + megnyitja a böngészőt)
 ```
 
 ### v0.5 – Python + Go parser (1 hét)
@@ -598,7 +598,7 @@ Aktuális projekt összefoglaló: .codex/context.md
 
 ### v1.0 – Polish
 ```
-✅ codex share (megosztható statikus export)
+✅ nodex share (megosztható statikus export)
 ✅ VS Code extension (státuszsor + search panel)
 ✅ Git history integráció (miért változott egy modul)
 ✅ Dead code detektálás
@@ -611,7 +611,7 @@ Aktuális projekt összefoglaló: .codex/context.md
 
 ```bash
 # 1. Projekt létrehozás
-mkdir codex && cd codex
+mkdir nodex && cd nodex
 bun init -y
 
 # 2. Függőségek
@@ -629,7 +629,7 @@ bun add -d @types/bun typescript
 # → tree-sitter alapú TypeScript parse
 
 # 6. Harmadik fájl: src/cli/main.ts
-# → codex init parancs
+# → nodex init parancs
 
 # Ezzel az alappal már van egy működő v0.1 ami
 # beolvassa a projektet és feltölti az adatbázist

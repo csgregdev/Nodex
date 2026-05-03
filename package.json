@@ -1,14 +1,14 @@
 {
-  "name": "codex",
+  "name": "nodex",
   "module": "index.ts",
   "type": "module",
   "private": true,
   "bin": {
-    "codex": "./src/cli/main.ts"
+    "nodex": "./src/cli/main.ts"
   },
   "scripts": {
     "dev": "bun --hot src/cli/main.ts",
-    "codex": "bun src/cli/main.ts"
+    "nodex": "bun src/cli/main.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

@@ -3,7 +3,7 @@ import { getNode, getAllNodes } from "../../store/nodes.ts";
 import { getEdgesTo, getAllEdges } from "../../store/edges.ts";
 
 export const impactToolDef = {
-  name: "codex_impact_map",
+  name: "nodex_impact_map",
   description: "Show what breaks if you change this node — direct and indirect dependents",
   inputSchema: {
     type: "object" as const,

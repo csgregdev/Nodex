@@ -9,7 +9,7 @@ export async function runUI(args: string[]) {
   const server = startAPIServer(root, port);
 
   const url = `http://localhost:${port}`;
-  console.log(`Codex UI: ${url}`);
+  console.log(`Nodex UI: ${url}`);
   console.log("Press Ctrl+C to stop.");
 
   // Open browser

@@ -4,7 +4,7 @@ import { startWatcher } from "../watcher/fswatch.ts";
 export async function runWatch(args: string[]) {
   const root = process.cwd();
   initDB(root);
-  console.log("Codex: Starting watch mode...");
+  console.log("Nodex: Starting watch mode...");
   startWatcher(root);
   // Keep process alive
   process.stdin.resume();

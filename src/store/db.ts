@@ -5,10 +5,10 @@ import { join } from "node:path";
 let _db: Database | null = null;
 
 export function initDB(projectRoot: string): Database {
-  const codexDir = join(projectRoot, ".codex");
-  mkdirSync(codexDir, { recursive: true });
+  const nodexDir = join(projectRoot, ".nodex");
+  mkdirSync(nodexDir, { recursive: true });
 
-  const dbPath = join(codexDir, "index.db");
+  const dbPath = join(nodexDir, "index.db");
   const db = new Database(dbPath, { create: true });
 
   db.run("PRAGMA journal_mode = WAL");

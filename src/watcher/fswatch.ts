@@ -9,7 +9,7 @@ import { deleteNodesByFile } from "../store/nodes.ts";
 import { deleteEdgesByFile } from "../store/edges.ts";
 
 const DEFAULT_IGNORE = [
-  "**/node_modules/**", "**/.git/**", "**/.codex/**",
+  "**/node_modules/**", "**/.git/**", "**/.nodex/**",
   "**/dist/**", "**/build/**", "**/.next/**",
   "**/__pycache__/**", "**/*.pyc",
   "**/.dart_tool/**", "**/vendor/**",
@@ -31,7 +31,7 @@ export function startWatcher(root: string): void {
     const timer = setTimeout(() => {
       debounceMap.delete(absolutePath);
       reindexFile(root, absolutePath).catch(err =>
-        console.error(`[codex] Error reindexing ${absolutePath}:`, err)
+        console.error(`[nodex] Error reindexing ${absolutePath}:`, err)
       );
     }, 500);
     debounceMap.set(absolutePath, timer);
@@ -44,10 +44,10 @@ export function startWatcher(root: string): void {
       const rel = relative(root, path);
       deleteNodesByFile(rel);
       deleteEdgesByFile(rel);
-      console.log(`[codex] Removed: ${rel}`);
+      console.log(`[nodex] Removed: ${rel}`);
     });
 
-  console.log(`[codex] Watching ${root} for changes...`);
+  console.log(`[nodex] Watching ${root} for changes...`);
 }
 
 async function reindexFile(root: string, absolutePath: string): Promise<void> {
@@ -65,7 +65,7 @@ async function reindexFile(root: string, absolutePath: string): Promise<void> {
   try {
     const parsed = await parseFile(absolutePath, relativePath, lang.name);
     indexFile(parsed, newHash);
-    console.log(`[codex] Updated: ${relativePath} (${parsed.symbols.length} symbols)`);
+    console.log(`[nodex] Updated: ${relativePath} (${parsed.symbols.length} symbols)`);
 
     // Re-summarize if API key available
     if (process.env.ANTHROPIC_API_KEY) {
@@ -86,6 +86,6 @@ async function reindexFile(root: string, absolutePath: string): Promise<void> {
       }
     }
   } catch (err) {
-    console.error(`[codex] Parse error ${relativePath}:`, err);
+    console.error(`[nodex] Parse error ${relativePath}:`, err);
   }
 }

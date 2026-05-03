@@ -2,7 +2,7 @@ import { z } from "zod";
 import { searchNodes } from "../../store/nodes.ts";
 
 export const searchToolDef = {
-  name: "codex_search",
+  name: "nodex_search",
   description: "Search the codebase index for functions, classes, modules by name or description",
   inputSchema: {
     type: "object" as const,

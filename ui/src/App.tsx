@@ -53,7 +53,7 @@ function App() {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
           <span style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, letterSpacing: "0.1em", color: "var(--muted-foreground)" }}>[</span>
-          <span style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, letterSpacing: "0.1em", fontSize: 14, color: "var(--foreground)" }}>CODEX</span>
+          <span style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, letterSpacing: "0.1em", fontSize: 14, color: "var(--foreground)" }}>NODEX</span>
           <span style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, letterSpacing: "0.1em", color: "var(--muted-foreground)" }}>]</span>
         </div>
         <SearchBar query={searchQuery} onQueryChange={setSearchQuery} onNodeSelect={handleNodeSelect} />

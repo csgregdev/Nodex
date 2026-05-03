@@ -10,10 +10,10 @@ import { join } from "node:path";
 export async function runInit(args: string[]) {
   const root = process.cwd();
 
-  console.log(`Codex: Initializing index for ${root}`);
+  console.log(`Nodex: Initializing index for ${root}`);
 
-  // Create .codex dir
-  await mkdir(join(root, ".codex"), { recursive: true });
+  // Create .nodex dir
+  await mkdir(join(root, ".nodex"), { recursive: true });
 
   // Init DB
   initDB(root);
@@ -26,7 +26,7 @@ export async function runInit(args: string[]) {
   let nodeCount = 0;
   let errorCount = 0;
 
-  console.log("Codex: Scanning files...");
+  console.log("Nodex: Scanning files...");
 
   for await (const file of walkProject(root)) {
     const hash = await fileHash(file.absolutePath);
@@ -43,33 +43,33 @@ export async function runInit(args: string[]) {
     }
   }
 
-  console.log(`\nCodex: Done. ${fileCount} files, ${nodeCount} symbols indexed.${errorCount > 0 ? ` (${errorCount} errors)` : ""}`);
-  console.log(`  Database: ${join(root, ".codex", "index.db")}`);
+  console.log(`\nNodex: Done. ${fileCount} files, ${nodeCount} symbols indexed.${errorCount > 0 ? ` (${errorCount} errors)` : ""}`);
+  console.log(`  Database: ${join(root, ".nodex", "index.db")}`);
 
   // Generate context.md
   await generateContextMd(root);
-  console.log(`  Context: ${join(root, ".codex", "context.md")}`);
+  console.log(`  Context: ${join(root, ".nodex", "context.md")}`);
 
   // Generate CLAUDE.md integration template
-  const claudeMdContent = `## Codex Index
-This project uses Codex for live codebase indexing.
+  const claudeMdContent = `## Nodex Index
+This project uses Nodex for live codebase indexing.
 
 After every file modification, call:
 \`\`\`
-codex_update_file({ file: "path/to/modified/file.ts" })
+nodex_update_file({ file: "path/to/modified/file.ts" })
 \`\`\`
 
 Available MCP tools:
-- \`codex_search(query)\` — find functions, modules, classes
-- \`codex_get_context(file)\` — full context for a file
-- \`codex_impact_map(node_id)\` — what breaks if you change this
-- \`codex_add_decision(node_id, decision)\` — record architectural decisions
-- \`codex_get_conventions()\` — project conventions and AI decisions
+- \`nodex_search(query)\` — find functions, modules, classes
+- \`nodex_get_context(file)\` — full context for a file
+- \`nodex_impact_map(node_id)\` — what breaks if you change this
+- \`nodex_add_decision(node_id, decision)\` — record architectural decisions
+- \`nodex_get_conventions()\` — project conventions and AI decisions
 
-Current project summary: .codex/context.md
+Current project summary: .nodex/context.md
 `;
-  await Bun.write(join(root, ".codex", "CLAUDE.md"), claudeMdContent);
-  console.log(`  Claude integration: ${join(root, ".codex", "CLAUDE.md")}`);
+  await Bun.write(join(root, ".nodex", "CLAUDE.md"), claudeMdContent);
+  console.log(`  Claude integration: ${join(root, ".nodex", "CLAUDE.md")}`);
 }
 
 async function generateContextMd(root: string) {
@@ -90,7 +90,7 @@ async function generateContextMd(root: string) {
   const symbolCount = nodes.filter((n) => n.name !== "__module__").length;
 
   const lines = [
-    "# Codex Context",
+    "# Nodex Context",
     `Generated: ${new Date().toISOString()}`,
     `Files: ${byFile.size} | Symbols: ${symbolCount} | Edges: ${edges.length}`,
     "",
@@ -106,5 +106,5 @@ async function generateContextMd(root: string) {
     lines.push("");
   }
 
-  await Bun.write(join(root, ".codex", "context.md"), lines.join("\n"));
+  await Bun.write(join(root, ".nodex", "context.md"), lines.join("\n"));
 }

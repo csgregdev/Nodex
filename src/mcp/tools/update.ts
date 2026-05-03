@@ -7,7 +7,7 @@ import { getProject } from "../../store/meta.ts";
 import { join } from "node:path";
 
 export const updateToolDef = {
-  name: "codex_update_file",
+  name: "nodex_update_file",
   description: "Re-index a file after it was modified. Call this after every file edit.",
   inputSchema: {
     type: "object" as const,
