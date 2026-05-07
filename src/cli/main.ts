@@ -35,6 +35,26 @@ switch (command) {
     await runSync(args);
     break;
   }
+  case "status": {
+    const { runStatus } = await import("./status.ts");
+    await runStatus(args);
+    break;
+  }
+  case "focus": {
+    const { runFocus } = await import("./focus.ts");
+    await runFocus(args);
+    break;
+  }
+  case "decision": {
+    const { runDecision } = await import("./decision.ts");
+    await runDecision(args);
+    break;
+  }
+  case "tokens": {
+    const { runTokens } = await import("./tokens.ts");
+    await runTokens(args);
+    break;
+  }
   case "mcp": {
     await import("../mcp/server.ts");
     break;
@@ -48,12 +68,16 @@ switch (command) {
     console.log(`Nodex - Live codebase knowledge graph
 
 Usage:
-  nodex init              Index current project
+  nodex init [--enrich]   Index current project (--enrich adds AI summaries)
   nodex reindex           Full reindex
   nodex search <query>    Search the index
-  nodex summarize          AI summaries for all modules
+  nodex summarize         AI summaries for all modules
   nodex watch             Auto-update on file changes
-  nodex sync              Git diff based incremental update
+  nodex sync [--enrich]   Git diff based incremental update
+  nodex status            Show AI knowledge freshness (stale/fresh/unknown)
+  nodex focus <path|query> Priority AI enrichment for a path or intent
+  nodex decision          Manage architectural decisions
+  nodex tokens            Token usage + cost report
   nodex mcp               Start MCP server (for Claude Code / AI tools)
   nodex ui                Visual graph UI (http://localhost:3456)
 

@@ -29,9 +29,21 @@ export function initDB(projectRoot: string): Database {
       complexity INTEGER DEFAULT 0,
       last_parsed INTEGER,
       last_ai INTEGER,
-      hash TEXT
+      hash TEXT,
+      current_hash TEXT,
+      hotspot_score REAL DEFAULT 0,
+      commit_count INTEGER DEFAULT 0
     )
   `);
+
+  // Migration: add new columns to existing DBs
+  for (const col of [
+    "ALTER TABLE nodes ADD COLUMN current_hash TEXT",
+    "ALTER TABLE nodes ADD COLUMN hotspot_score REAL DEFAULT 0",
+    "ALTER TABLE nodes ADD COLUMN commit_count INTEGER DEFAULT 0",
+  ]) {
+    try { db.run(col); } catch { /* column already exists */ }
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS edges (
@@ -39,13 +51,49 @@ export function initDB(projectRoot: string): Database {
       from_id TEXT NOT NULL,
       to_id TEXT NOT NULL,
       relationship TEXT NOT NULL,
+      weight INTEGER DEFAULT 1,
       FOREIGN KEY (from_id) REFERENCES nodes(id),
       FOREIGN KEY (to_id) REFERENCES nodes(id)
     )
   `);
 
+  // Migration: add weight column to existing DBs
+  try { db.run("ALTER TABLE edges ADD COLUMN weight INTEGER DEFAULT 1"); } catch { /* already exists */ }
+
   db.run(`CREATE INDEX IF NOT EXISTS idx_edges_from ON edges(from_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_edges_to ON edges(to_id)`);
+
+  // FTS5 for fast full-text search on nodes
+  db.run(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS nodes_fts USING fts5(
+      name, token, summary,
+      content=nodes,
+      content_rowid=rowid,
+      tokenize='unicode61'
+    )
+  `);
+
+  // Keep FTS index in sync
+  db.run(`
+    CREATE TRIGGER IF NOT EXISTS nodes_fts_insert AFTER INSERT ON nodes BEGIN
+      INSERT INTO nodes_fts(rowid, name, token, summary)
+      VALUES (new.rowid, new.name, new.token, new.summary);
+    END
+  `);
+  db.run(`
+    CREATE TRIGGER IF NOT EXISTS nodes_fts_delete AFTER DELETE ON nodes BEGIN
+      INSERT INTO nodes_fts(nodes_fts, rowid, name, token, summary)
+      VALUES ('delete', old.rowid, old.name, old.token, old.summary);
+    END
+  `);
+  db.run(`
+    CREATE TRIGGER IF NOT EXISTS nodes_fts_update AFTER UPDATE ON nodes BEGIN
+      INSERT INTO nodes_fts(nodes_fts, rowid, name, token, summary)
+      VALUES ('delete', old.rowid, old.name, old.token, old.summary);
+      INSERT INTO nodes_fts(rowid, name, token, summary)
+      VALUES (new.rowid, new.name, new.token, new.summary);
+    END
+  `);
 
   db.run(`
     CREATE TABLE IF NOT EXISTS meta (
@@ -64,6 +112,21 @@ export function initDB(projectRoot: string): Database {
       value TEXT NOT NULL
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS token_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      node_id TEXT,
+      file TEXT,
+      operation TEXT NOT NULL,
+      input_tokens INTEGER NOT NULL DEFAULT 0,
+      output_tokens INTEGER NOT NULL DEFAULT 0,
+      model TEXT,
+      created INTEGER NOT NULL
+    )
+  `);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_token_usage_file ON token_usage(file)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_token_usage_created ON token_usage(created)`);
 
   _db = db;
   return db;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Input } from "../components/ui/input"
 
 interface SearchResult {
   id: string;
@@ -52,7 +53,7 @@ export function SearchBar({ query, onQueryChange, onNodeSelect }: SearchBarProps
           position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
           color: "var(--muted-foreground)", fontSize: 14, pointerEvents: "none", userSelect: "none",
         }}>⌕</span>
-        <input
+        <Input
           ref={inputRef}
           placeholder="Search symbols, files..."
           value={query}

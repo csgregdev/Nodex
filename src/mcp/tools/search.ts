@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { searchNodes } from "../../store/nodes.ts";
+import { searchNodes, getNodeStatus } from "../../store/nodes.ts";
 
 export const searchToolDef = {
   name: "nodex_search",
@@ -24,9 +24,12 @@ export function searchTool(input: unknown) {
   return results.map(n => ({
     id: n.id,
     token: n.token ?? n.name,
+    summary: n.summary ?? null,
     file: n.file,
     line: n.line,
     type: n.type,
     language: n.language,
+    ai_status: getNodeStatus(n),
+    hotspot_score: n.hotspot_score ?? 0,
   }));
 }

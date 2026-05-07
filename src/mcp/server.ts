@@ -38,7 +38,7 @@ async function main() {
       let result: unknown;
       switch (name) {
         case "nodex_search":      result = searchTool(args); break;
-        case "nodex_get_context": result = contextTool(args); break;
+        case "nodex_get_context": result = await contextTool(args); break;
         case "nodex_impact_map":  result = impactTool(args); break;
         case "nodex_get_conventions": result = conventionsTool(args); break;
         case "nodex_update_file": result = await updateTool(args); break;

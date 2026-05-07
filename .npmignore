@@ -1,0 +1,8 @@
+docs/
+.nodex/
+node_modules/
+*.docx
+bun.lock
+components.json
+tsconfig.json
+CLAUDE.md

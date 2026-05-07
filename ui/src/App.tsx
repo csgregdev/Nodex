@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import { Sun, Moon, Layers, Network } from "lucide-react";
 import "./styles/globals.css";
 import { GraphView } from "./components/Graph";
 import { NodePanel } from "./components/NodePanel";
@@ -30,12 +31,36 @@ export interface GraphEdge {
   type?: string;
 }
 
+export type GraphViewMode = "full" | "tree" | "neighborhood";
+
+function useTheme() {
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const stored = localStorage.getItem("nodex-theme");
+    if (stored === "light" || stored === "dark") return stored;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("nodex-theme", theme);
+  }, [theme]);
+
+  const toggle = useCallback(() => setTheme(t => t === "dark" ? "light" : "dark"), []);
+  return { theme, toggle };
+}
+
 function App() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [impactNodeId, setImpactNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<GraphViewMode>(() =>
+    (localStorage.getItem("nodex-view-mode") as GraphViewMode) ?? "full"
+  );
+  const { theme, toggle } = useTheme();
 
   const handleNodeSelect = useCallback((nodeId: string | null) => {
+    // file:: nodes are tree-view aggregates — no symbol panel
+    if (nodeId?.startsWith("file::")) return;
     setSelectedNodeId(nodeId);
     setImpactNodeId(null);
   }, []);
@@ -43,6 +68,22 @@ function App() {
   const handleImpact = useCallback((nodeId: string) => {
     setImpactNodeId(prev => prev === nodeId ? null : nodeId);
   }, []);
+
+  const handleViewMode = useCallback((mode: GraphViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem("nodex-view-mode", mode);
+    setSelectedNodeId(null);
+    setImpactNodeId(null);
+  }, []);
+
+  const iconBtn = (active: boolean): React.CSSProperties => ({
+    display: "flex", alignItems: "center", justifyContent: "center",
+    width: 32, height: 32, borderRadius: "var(--radius-sm)",
+    border: "1px solid var(--border)",
+    background: active ? "var(--accent)" : "transparent",
+    color: active ? "var(--foreground)" : "var(--muted-foreground)",
+    cursor: "pointer", transition: "background 0.15s, color 0.15s",
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", overflow: "hidden", background: "var(--background)", color: "var(--foreground)" }}>
@@ -56,8 +97,49 @@ function App() {
           <span style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, letterSpacing: "0.1em", fontSize: 14, color: "var(--foreground)" }}>NODEX</span>
           <span style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, letterSpacing: "0.1em", color: "var(--muted-foreground)" }}>]</span>
         </div>
-        <SearchBar query={searchQuery} onQueryChange={setSearchQuery} onNodeSelect={handleNodeSelect} />
+
+        {/* View mode toggle */}
+        <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+          <button
+            title="Full symbol graph"
+            style={iconBtn(viewMode === "full")}
+            onClick={() => handleViewMode("full")}
+          >
+            <Network size={14} />
+          </button>
+          <button
+            title="File-level tree view"
+            style={iconBtn(viewMode === "tree")}
+            onClick={() => handleViewMode("tree")}
+          >
+            <Layers size={14} />
+          </button>
+        </div>
+
+        <SearchBar
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          onNodeSelect={handleNodeSelect}
+        />
         <StatsBar />
+        <button
+          onClick={toggle}
+          aria-label="Toggle theme"
+          style={{
+            marginLeft: "auto", flexShrink: 0,
+            ...iconBtn(false),
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = "var(--accent)";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--foreground)";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--muted-foreground)";
+          }}
+        >
+          {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
       </header>
       <main style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <GraphView
@@ -65,6 +147,7 @@ function App() {
           selectedNodeId={selectedNodeId}
           impactNodeId={impactNodeId}
           onNodeSelect={handleNodeSelect}
+          viewMode={viewMode}
         />
         {selectedNodeId && (
           <NodePanel

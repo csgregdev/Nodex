@@ -17,6 +17,9 @@ export interface ModuleSummaryResult {
   token: string;          // caveman format
   gotchas: string[];      // potential issues
   aiDecisions: string[];  // design decisions noted
+  inputTokens: number;
+  outputTokens: number;
+  model: string;
 }
 
 // Summarize a single module (file) based on its symbols
@@ -67,12 +70,15 @@ Keep gotchas and aiDecisions arrays empty [] if none found. Max 2 items each.`;
     messages: [{ role: "user", content: prompt }],
   });
 
+  const MODEL = "claude-haiku-4-5-20251001";
+  const inputTokens = response.usage.input_tokens;
+  const outputTokens = response.usage.output_tokens;
   const text = response.content[0]?.type === "text" ? response.content[0].text : "{}";
 
   // Extract JSON from response (handle markdown code blocks)
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    return { summary: "", token: "", gotchas: [], aiDecisions: [] };
+    return { summary: "", token: "", gotchas: [], aiDecisions: [], inputTokens, outputTokens, model: MODEL };
   }
 
   try {
@@ -82,9 +88,12 @@ Keep gotchas and aiDecisions arrays empty [] if none found. Max 2 items each.`;
       token: parsed.token ?? "",
       gotchas: parsed.gotchas ?? [],
       aiDecisions: parsed.aiDecisions ?? [],
+      inputTokens,
+      outputTokens,
+      model: MODEL,
     };
   } catch {
-    return { summary: "", token: "", gotchas: [], aiDecisions: [] };
+    return { summary: "", token: "", gotchas: [], aiDecisions: [], inputTokens, outputTokens, model: MODEL };
   }
 }
 

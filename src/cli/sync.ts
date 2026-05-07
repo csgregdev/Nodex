@@ -7,6 +7,7 @@ import { join } from "node:path";
 
 export async function runSync(args: string[]) {
   const root = process.cwd();
+  const enrich = args.includes("--enrich");
   initDB(root);
 
   // Get changed files since last commit (or last n commits)
@@ -55,4 +56,34 @@ export async function runSync(args: string[]) {
   }
 
   console.log(`Nodex: Done. ${indexed} files synced.`);
+
+  // AI enrichment of stale/changed files
+  if (enrich) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.warn("Nodex: ANTHROPIC_API_KEY not set. Skipping AI enrichment.");
+      return;
+    }
+    // Also include all stale nodes from DB
+    const { getStaleNodes, getUnknownNodes } = await import("../store/nodes.ts");
+    const stale = getStaleNodes().map(n => n.file);
+    const unknown = getUnknownNodes().map(n => n.file);
+    const toEnrich = [...new Set([...changedFiles, ...stale, ...unknown])];
+
+    if (toEnrich.length === 0) {
+      console.log("Nodex: Nothing to enrich — AI knowledge is up to date.");
+      return;
+    }
+
+    console.log(`\nNodex: Enriching ${toEnrich.length} files with AI...`);
+    const { enrichFiles } = await import("../summarizer/queue.ts");
+    await enrichFiles(root, toEnrich, {
+      onProgress: (file, done, total) => {
+        process.stdout.write(`\r  Enriched: ${done}/${total} — ${file}                    `);
+      },
+      onError: (file, err) => {
+        process.stderr.write(`\n  AI error: ${file}: ${err}\n`);
+      },
+    });
+    console.log("\nNodex: AI enrichment done.");
+  }
 }

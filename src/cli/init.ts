@@ -9,8 +9,9 @@ import { join } from "node:path";
 
 export async function runInit(args: string[]) {
   const root = process.cwd();
+  const enrich = args.includes("--enrich");
 
-  console.log(`Nodex: Initializing index for ${root}`);
+  console.log(`Nodex: Initializing index for ${root}${enrich ? " (with AI enrichment)" : ""}`);
 
   // Create .nodex dir
   await mkdir(join(root, ".nodex"), { recursive: true });
@@ -45,6 +46,55 @@ export async function runInit(args: string[]) {
 
   console.log(`\nNodex: Done. ${fileCount} files, ${nodeCount} symbols indexed.${errorCount > 0 ? ` (${errorCount} errors)` : ""}`);
   console.log(`  Database: ${join(root, ".nodex", "index.db")}`);
+
+  // AI enrichment if requested
+  if (enrich) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.warn("  Warning: --enrich flag set but ANTHROPIC_API_KEY not found. Skipping AI enrichment.");
+    } else {
+      console.log("\nNodex: Starting AI enrichment (background, rate limited)...");
+      const { enrichFiles } = await import("../summarizer/queue.ts");
+      const { walkProject } = await import("../indexer/walker.ts");
+      const filePaths: string[] = [];
+      for await (const f of walkProject(root)) filePaths.push(f.relativePath);
+
+      let enrichDone = 0;
+      await enrichFiles(root, filePaths, {
+        onProgress: (file, done, total) => {
+          enrichDone = done;
+          process.stdout.write(`\r  Enriched: ${done}/${total} — ${file}                    `);
+        },
+        onError: (file, err) => {
+          process.stderr.write(`\n  AI error: ${file}: ${err}\n`);
+        },
+      });
+      console.log(`\n  AI enrichment done: ${enrichDone} files processed.`);
+    }
+  } else {
+    console.log("  Tip: Run \x1b[1mnodex sync --enrich\x1b[0m or \x1b[1mnodex focus <path>\x1b[0m to add AI summaries.");
+  }
+
+  // Git intelligence: co-change + hotspot (runs after structural index)
+  try {
+    const { analyzeCoChanges, computeHotspots } = await import("../indexer/git.ts");
+    await analyzeCoChanges(root);
+    await computeHotspots(root);
+  } catch (err) {
+    console.warn("  Warning: git analysis failed (not a git repo?):", err);
+  }
+
+  // Decision inline markers scan
+  try {
+    const { indexFileDecisions } = await import("../indexer/decisions.ts");
+    const { walkProject } = await import("../indexer/walker.ts");
+    let decisionCount = 0;
+    for await (const f of walkProject(root)) {
+      decisionCount += await indexFileDecisions(root, f.relativePath);
+    }
+    if (decisionCount > 0) console.log(`  Decisions: ${decisionCount} inline markers indexed.`);
+  } catch (err) {
+    console.warn("  Warning: decision scan failed:", err);
+  }
 
   // Generate context.md
   await generateContextMd(root);

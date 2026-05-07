@@ -32,7 +32,8 @@
       "ui/src/lib/utils": ["./ui/src/lib/utils.ts"],
       "ui/src/components/*": ["./ui/src/components/*"],
       "ui/src/lib/*": ["./ui/src/lib/*"],
-      "ui/src/hooks/*": ["./ui/src/hooks/*"]
+      "ui/src/hooks/*": ["./ui/src/hooks/*"],
+      "@/*": ["./*"]
     }
   }
 }
