@@ -1,5 +1,5 @@
 {
-  "name": "@csgregdev/nodex",
+  "name": "@csgreg.dev/nodex",
   "version": "0.1.0",
   "description": "Live graph-based codebase knowledge store for CLI developers and AI tools",
   "module": "index.ts",
@@ -10,6 +10,7 @@
   "files": [
     "src/",
     "ui/",
+    "assets/",
     "index.ts"
   ],
   "engines": {

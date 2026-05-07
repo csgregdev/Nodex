@@ -1,5 +1,7 @@
 # Nodex
 
+![Nodex](assets/logo.png)
+
 Live, graph-based codebase knowledge store for CLI developers and AI tools.
 
 Reads your project → builds a node/edge graph → stores in SQLite → queryable via MCP server, CLI, and a visual graph UI.
