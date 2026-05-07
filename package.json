@@ -5,12 +5,13 @@
   "module": "index.ts",
   "type": "module",
   "bin": {
-    "nodex": "./src/cli/main.ts"
+    "nodex": "./bin/nodex"
   },
   "files": [
     "src/",
     "ui/",
     "assets/",
+    "bin/",
     "index.ts"
   ],
   "engines": {
