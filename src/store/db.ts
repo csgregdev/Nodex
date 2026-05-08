@@ -128,6 +128,25 @@ export function initDB(projectRoot: string): Database {
   db.run(`CREATE INDEX IF NOT EXISTS idx_token_usage_file ON token_usage(file)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_token_usage_created ON token_usage(created)`);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS query_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ts INTEGER NOT NULL,
+      tool TEXT NOT NULL,
+      file TEXT,
+      latency_ms INTEGER,
+      auto_reindexed INTEGER DEFAULT 0,
+      bench_session TEXT,
+      bench_mode TEXT
+    )
+  `);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_query_log_ts ON query_log(ts)`);
+  // Migration for existing DBs
+  for (const col of [
+    "ALTER TABLE query_log ADD COLUMN bench_session TEXT",
+    "ALTER TABLE query_log ADD COLUMN bench_mode TEXT",
+  ]) { try { db.run(col); } catch { /* already exists */ } }
+
   _db = db;
   return db;
 }

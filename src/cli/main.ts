@@ -55,6 +55,16 @@ switch (command) {
     await runTokens(args);
     break;
   }
+  case "stats": {
+    const { runStats } = await import("./stats.ts");
+    await runStats(args);
+    break;
+  }
+  case "bench": {
+    const { runBench } = await import("./bench.ts");
+    await runBench(args);
+    break;
+  }
   case "mcp": {
     await import("../mcp/server.ts");
     break;
@@ -78,6 +88,8 @@ Usage:
   nodex focus <path|query> Priority AI enrichment for a path or intent
   nodex decision          Manage architectural decisions
   nodex tokens            Token usage + cost report
+  nodex stats             MCP session stats (calls, latency, est. token savings)
+  nodex bench on|off|report  Benchmark: measure Claude speed with vs without Nodex
   nodex mcp               Start MCP server (for Claude Code / AI tools)
   nodex ui                Visual graph UI (http://localhost:3456)
 

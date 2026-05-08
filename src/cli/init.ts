@@ -6,6 +6,7 @@ import { indexFile } from "../indexer/graph.ts";
 import { fileHash } from "../indexer/differ.ts";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { startAnimation } from "./animate.ts";
 
 export async function runInit(args: string[]) {
   const root = process.cwd();
@@ -27,9 +28,13 @@ export async function runInit(args: string[]) {
   let nodeCount = 0;
   let errorCount = 0;
 
-  console.log("Nodex: Scanning files...");
+  // Collect files first for accurate total count
+  const allFiles: { absolutePath: string; relativePath: string; language: string }[] = [];
+  for await (const f of walkProject(root)) allFiles.push(f);
 
-  for await (const file of walkProject(root)) {
+  const anim = startAnimation("indexing");
+
+  for (const file of allFiles) {
     const hash = await fileHash(file.absolutePath);
 
     try {
@@ -37,14 +42,14 @@ export async function runInit(args: string[]) {
       indexFile(parsed, hash);
       fileCount++;
       nodeCount += parsed.symbols.length;
-      process.stdout.write(`\r  Indexed: ${fileCount} files, ${nodeCount} symbols`);
+      anim.update(file.relativePath, fileCount, allFiles.length);
     } catch (err) {
       errorCount++;
       process.stderr.write(`\n  Error parsing ${file.relativePath}: ${err}\n`);
     }
   }
 
-  console.log(`\nNodex: Done. ${fileCount} files, ${nodeCount} symbols indexed.${errorCount > 0 ? ` (${errorCount} errors)` : ""}`);
+  anim.stop(`${fileCount} files · ${nodeCount} symbols${errorCount > 0 ? ` · ${errorCount} errors` : ""}`);
   console.log(`  Database: ${join(root, ".nodex", "index.db")}`);
 
   // AI enrichment if requested
@@ -52,23 +57,21 @@ export async function runInit(args: string[]) {
     if (!process.env.ANTHROPIC_API_KEY) {
       console.warn("  Warning: --enrich flag set but ANTHROPIC_API_KEY not found. Skipping AI enrichment.");
     } else {
-      console.log("\nNodex: Starting AI enrichment (background, rate limited)...");
       const { enrichFiles } = await import("../summarizer/queue.ts");
-      const { walkProject } = await import("../indexer/walker.ts");
-      const filePaths: string[] = [];
-      for await (const f of walkProject(root)) filePaths.push(f.relativePath);
+      const filePaths = allFiles.map(f => f.relativePath);
 
       let enrichDone = 0;
+      const enrichAnim = startAnimation("AI enrichment");
       await enrichFiles(root, filePaths, {
         onProgress: (file, done, total) => {
           enrichDone = done;
-          process.stdout.write(`\r  Enriched: ${done}/${total} — ${file}                    `);
+          enrichAnim.update(file, done, total);
         },
         onError: (file, err) => {
           process.stderr.write(`\n  AI error: ${file}: ${err}\n`);
         },
       });
-      console.log(`\n  AI enrichment done: ${enrichDone} files processed.`);
+      enrichAnim.stop(`${enrichDone} files enriched`);
     }
   } else {
     console.log("  Tip: Run \x1b[1mnodex sync --enrich\x1b[0m or \x1b[1mnodex focus <path>\x1b[0m to add AI summaries.");
