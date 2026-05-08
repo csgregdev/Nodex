@@ -25,6 +25,8 @@ export function startAPIServer(root: string, port = 3456) {
     const page = parseInt(c.req.query("page") ?? "0");
     const pageSize = parseInt(c.req.query("pageSize") ?? "0");
 
+    const connectedOnly = c.req.query("connected") === "true";
+
     let nodes = getAllNodes().filter(n => n.name !== "__module__");
     if (module) nodes = nodes.filter(n => n.file.includes(module));
 
@@ -37,6 +39,19 @@ export function startAPIServer(root: string, port = 3456) {
     // Only return edges where both endpoints are in current node set
     const allEdges = getAllEdges();
     const edges = allEdges.filter(e => nodeIds.has(e.from_id) && nodeIds.has(e.to_id));
+
+    // For large graphs: auto-filter to connected nodes only (have at least one edge)
+    const CONNECTED_THRESHOLD = 400;
+    if (connectedOnly || (nodes.length > CONNECTED_THRESHOLD && !module && pageSize === 0)) {
+      const connectedIds = new Set<string>();
+      for (const e of edges) {
+        connectedIds.add(e.from_id);
+        connectedIds.add(e.to_id);
+      }
+      if (connectedIds.size > 0) {
+        nodes = nodes.filter(n => connectedIds.has(n.id));
+      }
+    }
 
     const rfNodes = nodes.map(n => ({
       id: n.id,
