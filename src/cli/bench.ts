@@ -1,5 +1,6 @@
 import { initDB, getDB } from "../store/db.ts";
 import { setProject, getProject } from "../store/meta.ts";
+import { join } from "node:path";
 
 const C = {
   reset:  "\x1b[0m",
@@ -166,9 +167,165 @@ export async function runBench(args: string[]) {
     return;
   }
 
+  // ── run ────────────────────────────────────────────────
+  if (sub === "run") {
+    const casesPath = args[1]
+      ? join(root, args[1])
+      : join(import.meta.dir, "bench-cases.json");
+
+    const casesFile = Bun.file(casesPath);
+    if (!(await casesFile.exists())) {
+      console.error(`Bench cases not found: ${casesPath}`);
+      process.exit(1);
+    }
+
+    const cases: { id: string; question: string; category: string }[] = await casesFile.json();
+    console.log(`\n${C.cyan}${C.bold} nodex bench run${C.reset}  — ${cases.length} test cases\n${line()}`);
+
+    interface RunResult {
+      id: string;
+      category: string;
+      mode: "on" | "off";
+      input_tokens: number;
+      output_tokens: number;
+      cache_read: number;
+      cache_creation: number;
+      cost_usd: number;
+      duration_ms: number;
+      num_turns: number;
+      response_length: number;
+    }
+
+    const results: RunResult[] = [];
+
+    async function runCase(
+      c: { id: string; question: string; category: string },
+      mode: "on" | "off",
+    ): Promise<RunResult> {
+      // Set bench mode
+      setProject("bench_mode", mode);
+      setProject("bench_session", `bench_run_${mode}_${Date.now()}`);
+
+      const proc = Bun.spawn(
+        ["claude", "-p", c.question, "--output-format", "json"],
+        { cwd: root, stdout: "pipe", stderr: "pipe" }
+      );
+
+      const stdout = await new Response(proc.stdout).text();
+      await proc.exited;
+
+      try {
+        const json = JSON.parse(stdout);
+        return {
+          id: c.id,
+          category: c.category,
+          mode,
+          input_tokens: json.usage?.input_tokens ?? 0,
+          output_tokens: json.usage?.output_tokens ?? 0,
+          cache_read: json.usage?.cache_read_input_tokens ?? 0,
+          cache_creation: json.usage?.cache_creation_input_tokens ?? 0,
+          cost_usd: json.total_cost_usd ?? 0,
+          duration_ms: json.duration_ms ?? 0,
+          num_turns: json.num_turns ?? 0,
+          response_length: (json.result?.length ?? 0),
+        };
+      } catch {
+        console.error(`  ${C.red}Failed to parse:${C.reset} ${c.id} (${mode})`);
+        return {
+          id: c.id, category: c.category, mode,
+          input_tokens: 0, output_tokens: 0, cache_read: 0, cache_creation: 0,
+          cost_usd: 0, duration_ms: 0, num_turns: 0, response_length: 0,
+        };
+      }
+    }
+
+    // Phase 1: WITH Nodex
+    console.log(`\n${C.green}${C.bold} Phase 1: WITH Nodex${C.reset}`);
+    for (const c of cases) {
+      process.stdout.write(`  ${C.dim}${c.id}...${C.reset}`);
+      const r = await runCase(c, "on");
+      results.push(r);
+      console.log(` ${r.duration_ms}ms  ${r.input_tokens} in  ${r.output_tokens} out  $${r.cost_usd.toFixed(4)}`);
+    }
+
+    // Phase 2: WITHOUT Nodex
+    console.log(`\n${C.yellow}${C.bold} Phase 2: WITHOUT Nodex (baseline)${C.reset}`);
+    for (const c of cases) {
+      process.stdout.write(`  ${C.dim}${c.id}...${C.reset}`);
+      const r = await runCase(c, "off");
+      results.push(r);
+      console.log(` ${r.duration_ms}ms  ${r.input_tokens} in  ${r.output_tokens} out  $${r.cost_usd.toFixed(4)}`);
+    }
+
+    // Reset bench mode
+    setProject("bench_mode", "");
+    setProject("bench_session", "");
+
+    // ── Summary ──
+    const onResults  = results.filter(r => r.mode === "on");
+    const offResults = results.filter(r => r.mode === "off");
+
+    const sum = (arr: RunResult[], key: keyof RunResult) =>
+      arr.reduce((s, r) => s + (r[key] as number), 0);
+
+    const onTokens  = sum(onResults, "input_tokens") + sum(onResults, "cache_read") + sum(onResults, "cache_creation");
+    const offTokens = sum(offResults, "input_tokens") + sum(offResults, "cache_read") + sum(offResults, "cache_creation");
+    const onCost    = sum(onResults, "cost_usd");
+    const offCost   = sum(offResults, "cost_usd");
+    const onTime    = sum(onResults, "duration_ms");
+    const offTime   = sum(offResults, "duration_ms");
+
+    console.log(`\n${line(60)}`);
+    console.log(`${C.bold} Summary (${cases.length} test cases)${C.reset}\n`);
+
+    console.log(`  ${"".padEnd(20)} ${C.green}WITH Nodex${C.reset}   ${C.yellow}WITHOUT${C.reset}`);
+    console.log(`  ${"Input tokens".padEnd(20)} ${String(onTokens).padStart(10)}   ${String(offTokens).padStart(10)}`);
+    console.log(`  ${"Output tokens".padEnd(20)} ${String(sum(onResults, "output_tokens")).padStart(10)}   ${String(sum(offResults, "output_tokens")).padStart(10)}`);
+    console.log(`  ${"Total time".padEnd(20)} ${String(onTime + "ms").padStart(10)}   ${String(offTime + "ms").padStart(10)}`);
+    console.log(`  ${"Cost".padEnd(20)} ${("$" + onCost.toFixed(4)).padStart(10)}   ${("$" + offCost.toFixed(4)).padStart(10)}`);
+
+    const tokenDiff = offTokens - onTokens;
+    const costDiff  = offCost - onCost;
+    const timeDiff  = offTime - onTime;
+
+    console.log(`\n${line(60)}`);
+    console.log(`${C.bold} Delta${C.reset}`);
+    const tokenCol = tokenDiff > 0 ? C.green : C.red;
+    const costCol  = costDiff > 0 ? C.green : C.red;
+    const timeCol  = timeDiff > 0 ? C.green : C.red;
+    console.log(`  Tokens: ${tokenCol}${tokenDiff > 0 ? "+" : ""}${tokenDiff.toLocaleString()} ${tokenDiff > 0 ? "saved" : "more"} with Nodex${C.reset}`);
+    console.log(`  Cost:   ${costCol}${costDiff > 0 ? "+" : ""}$${costDiff.toFixed(4)} ${costDiff > 0 ? "saved" : "more"}${C.reset}`);
+    console.log(`  Time:   ${timeCol}${timeDiff > 0 ? "+" : ""}${timeDiff}ms ${timeDiff > 0 ? "faster" : "slower"}${C.reset}`);
+    console.log(line(60));
+
+    // Per-case comparison
+    console.log(`\n${C.bold} Per-case breakdown${C.reset}\n`);
+    console.log(`  ${"Case".padEnd(20)} ${"Δ tokens".padStart(10)} ${"Δ cost".padStart(10)} ${"Δ time".padStart(10)}`);
+    console.log(`  ${"─".repeat(20)} ${"─".repeat(10)} ${"─".repeat(10)} ${"─".repeat(10)}`);
+    for (const c of cases) {
+      const on  = onResults.find(r => r.id === c.id)!;
+      const off = offResults.find(r => r.id === c.id)!;
+      const onT  = on.input_tokens + on.cache_read + on.cache_creation;
+      const offT = off.input_tokens + off.cache_read + off.cache_creation;
+      const dT = offT - onT;
+      const dC = off.cost_usd - on.cost_usd;
+      const dMs = off.duration_ms - on.duration_ms;
+      console.log(
+        `  ${c.id.padEnd(20)} ${(dT > 0 ? "+" + dT : String(dT)).padStart(10)} ${((dC > 0 ? "+" : "") + "$" + dC.toFixed(4)).padStart(10)} ${((dMs > 0 ? "+" : "") + dMs + "ms").padStart(10)}`
+      );
+    }
+
+    // Save results to file
+    const reportPath = join(root, ".nodex", "bench_report.json");
+    await Bun.write(reportPath, JSON.stringify({ timestamp: new Date().toISOString(), cases, results }, null, 2));
+    console.log(`\n${C.dim}Full report: ${reportPath}${C.reset}\n`);
+    return;
+  }
+
   console.log(`Usage:
   nodex bench on       Start WITH-Nodex session
   nodex bench off      Start WITHOUT-Nodex (baseline) session
+  nodex bench run      Automated A/B test (runs claude -p for each case)
   nodex bench report   Compare last on vs off session
   nodex bench reset    Clear bench mode
 `);

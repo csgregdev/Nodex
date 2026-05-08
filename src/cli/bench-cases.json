@@ -1,0 +1,27 @@
+[
+  {
+    "id": "context_widget",
+    "question": "Show me the full context for EventWidget — what does it do, what are its methods, what does it import?",
+    "category": "context"
+  },
+  {
+    "id": "impact_auth",
+    "question": "What would break if I significantly refactored AuthRepository? List all dependents.",
+    "category": "impact"
+  },
+  {
+    "id": "search_auth",
+    "question": "Search for the authentication flow — what classes are involved and how do they connect?",
+    "category": "search"
+  },
+  {
+    "id": "cross_file",
+    "question": "Which files always change together with event_widget.dart and why might that be?",
+    "category": "co-change"
+  },
+  {
+    "id": "architecture",
+    "question": "Give me an overview of the project's architecture — main modules, layers, and key patterns used.",
+    "category": "overview"
+  }
+]

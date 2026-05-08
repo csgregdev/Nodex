@@ -186,6 +186,43 @@ env: NODEX_PROJECT=/path/to/your/project
 
 ---
 
+## Benchmark
+
+Does Nodex actually save tokens? Measured on a real Flutter project (~250 files, ~4k symbols).
+
+**Method:** same 3 questions asked twice — once with Nodex active (`nodex bench on`), once with Nodex returning empty responses so Claude had to read files directly (`nodex bench off`).
+
+```
+Questions asked:
+  1. "Show me context for EventWidget"
+  2. "What breaks if I change UserRepository?"
+  3. "Search for auth flow"
+```
+
+**Results:**
+
+| | With Nodex | Without Nodex |
+|--|--|--|
+| Tool calls | 4 (search + context) | 2 (empty — fell back to file reads) |
+| Files read by Claude | 0 | 2 (`event_widget.dart` 776 lines, `auth.dart` ~700 lines) |
+| Avg tool latency | 3ms | 0ms (MCP overhead only) |
+| Est. tokens saved | ~4,400 | — |
+| Cache hit (Claude) | 93% | 91% |
+
+**Without Nodex**, Claude read ~1,500 lines of raw source ≈ **~5,000+ tokens of file content** for 2 questions. Nodex returned the same structural information as compact JSON — symbols, imports, co-changes, edges — in a fraction of the context.
+
+> Session time is hard to measure from Nodex's side (it only tracks its own call durations). For precise token counts, run `/cost` in Claude Code after each session and compare.
+
+**Run your own benchmark:**
+
+```bash
+nodex bench on    # Nodex active — ask Claude something
+nodex bench off   # baseline — same questions
+nodex bench report
+```
+
+---
+
 ## Visual graph UI
 
 Open with `nodex ui` → `http://localhost:3456`
@@ -330,6 +367,43 @@ nodex tokens --by-file
 nodex tokens --since=7d
 ```
 
+### `nodex stats`
+
+MCP session summary — tool calls, latency, estimated token savings.
+
+```bash
+nodex stats               # last 2 hours
+nodex stats --hours=8     # last 8 hours
+nodex stats --all         # all time
+```
+
+### `nodex bench on|off|report|run`
+
+Measure Claude's speed and token usage with vs without Nodex.
+
+```bash
+# Manual A/B test (interactive)
+nodex bench on      # start WITH-Nodex session — Nodex active, logging
+nodex bench off     # start baseline session — Nodex returns empty, Claude reads files
+nodex bench report  # compare last on vs off session
+nodex bench reset   # clear bench mode
+
+# Automated A/B test (non-interactive)
+nodex bench run                    # run predefined test cases
+nodex bench run my_cases.json      # run custom test cases
+```
+
+`nodex bench run` uses `claude -p --output-format json` to run each test case twice — once with Nodex active, once with Nodex disabled — and captures exact token counts, costs, and timings from Claude's JSON output. Results saved to `.nodex/bench_report.json`.
+
+Custom test cases format:
+
+```json
+[
+  { "id": "context_widget", "question": "Show me context for EventWidget", "category": "context" },
+  { "id": "impact_auth", "question": "What breaks if I refactor AuthRepository?", "category": "impact" }
+]
+```
+
 ### `nodex reindex`
 
 Drop and rebuild the entire index from scratch.
@@ -365,8 +439,8 @@ Start MCP stdio server (used by Claude Code and other MCP clients).
 - **Decision mining** — inline markers + git commit message scanning
 
 ### MCP server (6 tools)
-- `nodex_search` — full-text symbol search
-- `nodex_get_context` — all nodes, edges, meta for a file; lazy AI enrichment if needed
+- `nodex_search` — full-text symbol search; results include `dependent_count`, `hotspot_score`, and `warnings`
+- `nodex_get_context` — returns an enrich-free **digest** (purpose, exported API, used_by, warnings, change_risk, read_these_too) plus all nodes, edges, meta. Auto-reindexes stale files. Lazy AI enrichment if API key is set.
 - `nodex_impact_map` — direct + indirect dependents, risk level
 - `nodex_get_conventions` — project-wide decisions and gotchas
 - `nodex_update_file` — re-index a file after modification
@@ -418,6 +492,7 @@ module:    [file.ts]|fw:nextjs|exports:A,B,C
 | `ANTHROPIC_API_KEY` | Required for AI enrichment |
 | `NODEX_PROJECT` | Project root for MCP server (defaults to cwd) |
 | `PORT` | UI server port (default `3456`) |
+| `NODEX_DISABLED` | Set to `1` to disable all MCP tool responses (baseline benchmarking) |
 
 ---
 
