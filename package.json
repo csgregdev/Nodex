@@ -1,6 +1,6 @@
 {
   "name": "@csgreg.dev/nodex",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Live graph-based codebase knowledge store for CLI developers and AI tools",
   "module": "index.ts",
   "type": "module",
