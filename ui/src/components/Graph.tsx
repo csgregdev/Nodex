@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo, useState } from "react";
+import React, { useEffect, useCallback, useState, useRef, useDeferredValue } from "react";
 import {
   ReactFlow,
   Background,
@@ -20,7 +20,18 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import dagre from "@dagrejs/dagre";
+import { Code2, Box, Braces, Package, Component, Hash } from "lucide-react";
 import type { GraphNode, GraphEdge, GraphViewMode } from "../App";
+import { ALL_NODE_TYPES, ALL_EDGE_TYPES } from "./FilterBar";
+
+// ── Node type icon + color config ─────────────────────────────────────────────
+const NODE_ICON_MAP: Record<string, React.ElementType> = {
+  fn: Code2, class: Box, interface: Braces, module: Package, widget: Component, type: Hash,
+};
+const NODE_COLOR_MAP: Record<string, string> = {
+  fn: "#22d3ee", class: "#c084fc", interface: "#4ade80",
+  module: "#fbbf24", widget: "#fb923c", type: "#6b7280",
+};
 
 // ── Edge relationship config ──────────────────────────────────────────────────
 export const EDGE_STYLES: Record<string, { color: string; dash?: string; width?: number }> = {
@@ -169,6 +180,8 @@ const NodexNode = ({ data, selected }: { data: GraphNode["data"]; selected: bool
   const aiStatus = (data as any).aiStatus as AIStatus ?? "unknown";
   const hotspotScore = (data as any).hotspotScore as number ?? 0;
   const borderOverride = aiStatusBorder(aiStatus, hotspotScore);
+  const Icon = NODE_ICON_MAP[data.nodeType];
+  const iconColor = NODE_COLOR_MAP[data.nodeType] ?? "var(--muted-foreground)";
 
   return (
     <div
@@ -176,7 +189,8 @@ const NodexNode = ({ data, selected }: { data: GraphNode["data"]; selected: bool
       style={borderOverride}
     >
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
-      <div className="nodex-node-label" style={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <div className="nodex-node-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        {Icon && <Icon size={10} style={{ color: iconColor, flexShrink: 0, opacity: 0.85 }} />}
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {data.label}
         </span>
@@ -307,6 +321,9 @@ interface GraphViewProps {
   impactNodeId: string | null;
   onNodeSelect: (id: string | null) => void;
   viewMode: GraphViewMode;
+  activeTypes: Set<string>;
+  activeEdgeTypes: Set<string>;
+  folderScope: string;
 }
 
 const CLUSTER_THRESHOLD = 500;
@@ -380,6 +397,7 @@ function NodeContextMenu({ x, y, nodeId, file, onClose }: ContextMenuProps) {
 
 function GraphViewInner({
   searchQuery, selectedNodeId, impactNodeId, onNodeSelect, viewMode,
+  activeTypes, activeEdgeTypes, folderScope,
 }: GraphViewProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<RFNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<RFEdge>([]);
@@ -395,6 +413,13 @@ function GraphViewInner({
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string; file: string } | null>(null);
   const { fitView } = useReactFlow();
 
+  // Raw data from API — filters applied client-side
+  const rawNodesRef = useRef<GraphNode[]>([]);
+  const rawEdgesRef = useRef<GraphEdge[]>([]);
+
+  // Deferred search so layout doesn't thrash on every keystroke
+  const deferredSearch = useDeferredValue(searchQuery);
+
   const applyLayout = useCallback((rfNodes: RFNode[], rfEdges: RFEdge[], dir: LayoutDir) => {
     const laid = dagreLayout(rfNodes, rfEdges, dir);
     setNodes(laid as any);
@@ -402,6 +427,52 @@ function GraphViewInner({
     setTimeout(() => fitView({ padding: 0.1, duration: 400 }), 50);
   }, [fitView]);
 
+  // doFilterRef always holds latest filter function (avoids stale closures in loadGraph)
+  const doFilterRef = useRef<() => void>(() => {});
+  doFilterRef.current = () => {
+    let filteredNodes = rawNodesRef.current;
+
+    // Hard filter by node type
+    if (activeTypes.size < ALL_NODE_TYPES.length) {
+      filteredNodes = filteredNodes.filter(n => activeTypes.has((n as any).data.nodeType));
+    }
+
+    // Hard filter by folder scope
+    if (folderScope.trim()) {
+      const scope = folderScope.trim();
+      filteredNodes = filteredNodes.filter(n => (n as any).data.file.includes(scope));
+    }
+
+    // Hard filter by search query
+    if (deferredSearch.trim()) {
+      const q = deferredSearch.toLowerCase();
+      filteredNodes = filteredNodes.filter(n => {
+        const d = (n as any).data as GraphNode["data"];
+        return (
+          d.label.toLowerCase().includes(q) ||
+          d.file.toLowerCase().includes(q) ||
+          (d.token ?? "").toLowerCase().includes(q)
+        );
+      });
+    }
+
+    const nodeIds = new Set(filteredNodes.map(n => n.id));
+
+    // Keep edges where both endpoints survive the node filter
+    let filteredEdges = rawEdgesRef.current.filter(
+      e => nodeIds.has(e.source) && nodeIds.has(e.target)
+    );
+
+    // Hard filter by edge type
+    if (activeEdgeTypes.size < ALL_EDGE_TYPES.length) {
+      filteredEdges = filteredEdges.filter(e => activeEdgeTypes.has(e.label ?? "calls"));
+    }
+
+    const rfEdges = buildRFEdges(filteredEdges, showLabels);
+    applyLayout(filteredNodes as RFNode[], rfEdges, layoutDir);
+  };
+
+  // Load graph from API, store raw data, apply filters
   const loadGraph = useCallback((url: string) => {
     setLoading(true);
     fetch(url)
@@ -409,23 +480,21 @@ function GraphViewInner({
       .then((data: unknown) => {
         const d = data as { nodes: GraphNode[]; edges: GraphEdge[]; total?: number };
         setTotalNodeCount(d.total ?? d.nodes.length);
-        const rfEdges = buildRFEdges(d.edges, showLabels);
-        applyLayout(d.nodes as RFNode[], rfEdges, layoutDir);
+        rawNodesRef.current = d.nodes;
+        rawEdgesRef.current = d.edges;
+        doFilterRef.current();
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [showLabels, layoutDir, applyLayout]);
+  }, []); // stable — reads everything via refs
 
-  // Load graph based on viewMode
+  // Reload on view mode change
   useEffect(() => {
     setNeighborhoodCenter(null);
     setImpactData(null);
-    if (viewMode === "tree") {
-      loadGraph("/api/graph/tree");
-    } else {
-      loadGraph("/api/graph");
-    }
-  }, [viewMode]);
+    if (viewMode === "tree") loadGraph("/api/graph/tree");
+    else loadGraph("/api/graph");
+  }, [viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Neighborhood mode: double-click node
   const handleNeighborhood = useCallback((nodeId: string) => {
@@ -436,19 +505,26 @@ function GraphViewInner({
       .then(r => r.json())
       .then((data: unknown) => {
         const d = data as { nodes: GraphNode[]; edges: GraphEdge[] };
-        const rfEdges = buildRFEdges(d.edges, showLabels);
-        applyLayout(d.nodes as RFNode[], rfEdges, layoutDir);
+        rawNodesRef.current = d.nodes;
+        rawEdgesRef.current = d.edges;
+        doFilterRef.current();
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [viewMode, showLabels, layoutDir, applyLayout]);
+  }, [viewMode]);
 
   const clearNeighborhood = useCallback(() => {
     setNeighborhoodCenter(null);
-    loadGraph("/api/graph");
-  }, [loadGraph]);
+    loadGraph(viewMode === "tree" ? "/api/graph/tree" : "/api/graph");
+  }, [loadGraph, viewMode]);
 
-  // Update edge showLabels without refetch
+  // Re-filter when any filter prop or layout dir changes
+  useEffect(() => {
+    if (rawNodesRef.current.length === 0) return;
+    doFilterRef.current();
+  }, [activeTypes, activeEdgeTypes, folderScope, deferredSearch, layoutDir]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update edge labels in-place (no re-layout needed)
   useEffect(() => {
     setEdges(prev => prev.map(e => ({
       ...e,
@@ -457,13 +533,9 @@ function GraphViewInner({
     localStorage.setItem("nodex-edge-labels", String(showLabels));
   }, [showLabels]);
 
-  // Re-layout on direction change
+  // Persist layout direction
   useEffect(() => {
-    if (nodes.length === 0) return;
-    const laid = dagreLayout(nodes, edges, layoutDir);
-    setNodes(laid as any);
     localStorage.setItem("nodex-layout-dir", layoutDir);
-    setTimeout(() => fitView({ padding: 0.1, duration: 400 }), 50);
   }, [layoutDir]);
 
   // Impact map
@@ -480,21 +552,7 @@ function GraphViewInner({
       });
   }, [impactNodeId]);
 
-  const filteredNodeIds = useMemo(() => {
-    if (!searchQuery) return null;
-    const q = searchQuery.toLowerCase();
-    return new Set(
-      nodes.filter(n => {
-        const d = n.data as GraphNode["data"];
-        return d.label.toLowerCase().includes(q) ||
-          d.file.toLowerCase().includes(q) ||
-          (d.token ?? "").toLowerCase().includes(q);
-      }).map(n => n.id)
-    );
-  }, [nodes, searchQuery]);
-
-  const displayNodes = useMemo(() => nodes.map(n => {
-    const isDimmed = filteredNodeIds && !filteredNodeIds.has(n.id);
+  const displayNodes = nodes.map(n => {
     const isImpactDirect = impactData?.direct.includes(n.id);
     const isImpactIndirect = impactData?.indirect.includes(n.id);
     return {
@@ -504,11 +562,8 @@ function GraphViewInner({
         isImpactDirect ? "impact-direct" : "",
         isImpactIndirect ? "impact-indirect" : "",
       ].filter(Boolean).join(" "),
-      style: isDimmed
-        ? { opacity: 0.15, transition: "opacity 0.2s" }
-        : { opacity: 1, transition: "opacity 0.2s" },
     };
-  }), [nodes, selectedNodeId, filteredNodeIds, impactData]);
+  });
 
   const onNodeClick = useCallback((_: any, node: RFNode) => {
     onNodeSelect(node.id === selectedNodeId ? null : node.id);
@@ -542,7 +597,7 @@ function GraphViewInner({
     );
   }
 
-  if (nodes.length === 0) {
+  if (rawNodesRef.current.length === 0) {
     return (
       <div style={centerStyle}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
@@ -552,6 +607,10 @@ function GraphViewInner({
       </div>
     );
   }
+
+  const filteredCount = nodes.length;
+  const totalCount = rawNodesRef.current.length;
+  const isFiltering = filteredCount < totalCount;
 
   return (
     <div style={{ flex: 1, position: "relative" }} onClick={() => setContextMenu(null)}>
@@ -576,15 +635,20 @@ function GraphViewInner({
         onClearNeighborhood={clearNeighborhood}
       />
       {showLegend && <EdgeLegend />}
-      {totalNodeCount > CLUSTER_THRESHOLD && !neighborhoodCenter && (
+      {/* Filter / cluster status banner */}
+      {(isFiltering || (totalNodeCount > CLUSTER_THRESHOLD && !neighborhoodCenter)) && (
         <div style={{
           position: "absolute", top: 40, left: "50%", transform: "translateX(-50%)",
           zIndex: 10,
-          background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.4)",
+          background: isFiltering ? "rgba(6,182,212,0.1)" : "rgba(251,191,36,0.1)",
+          border: `1px solid ${isFiltering ? "rgba(6,182,212,0.4)" : "rgba(251,191,36,0.4)"}`,
           borderRadius: 2, padding: "4px 12px",
-          fontSize: 11, fontFamily: "ui-monospace, monospace", color: "#fbbf24",
+          fontSize: 11, fontFamily: "ui-monospace, monospace",
+          color: isFiltering ? "#22d3ee" : "#fbbf24",
         }}>
-          {totalNodeCount} nodes — double-click node for neighborhood view, or switch to file tree
+          {isFiltering
+            ? `${filteredCount} / ${totalCount} nodes`
+            : `${totalNodeCount} nodes — double-click node for neighborhood view`}
         </div>
       )}
       <ReactFlow
@@ -608,11 +672,7 @@ function GraphViewInner({
         <MiniMap
           nodeColor={(n) => {
             const t = (n.data as GraphNode["data"])?.nodeType;
-            if (t === "fn") return "#00d4ff44";
-            if (t === "class") return "#9d5cff44";
-            if (t === "interface") return "#00ff9d44";
-            if (t === "module") return "#ffaa0044";
-            return "#1e1e32";
+            return NODE_COLOR_MAP[t] ? `${NODE_COLOR_MAP[t]}44` : "#1e1e32";
           }}
           maskColor="rgba(7,7,9,0.8)"
         />

@@ -6,6 +6,7 @@ import { GraphView } from "./components/Graph";
 import { NodePanel } from "./components/NodePanel";
 import { SearchBar } from "./components/SearchBar";
 import { StatsBar } from "./components/StatsBar";
+import { FilterBar, ALL_NODE_TYPES, ALL_EDGE_TYPES } from "./components/FilterBar";
 
 export interface GraphNode {
   id: string;
@@ -58,8 +59,40 @@ function App() {
   );
   const { theme, toggle } = useTheme();
 
+  // Filter state
+  const [activeTypes, setActiveTypes] = useState<Set<string>>(
+    () => new Set(ALL_NODE_TYPES)
+  );
+  const [activeEdgeTypes, setActiveEdgeTypes] = useState<Set<string>>(
+    () => new Set(ALL_EDGE_TYPES)
+  );
+  const [folderScope, setFolderScope] = useState("");
+
+  const handleToggleType = useCallback((type: string) => {
+    setActiveTypes(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }, []);
+
+  const handleToggleEdgeType = useCallback((type: string) => {
+    setActiveEdgeTypes(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }, []);
+
+  const handleResetFilters = useCallback(() => {
+    setActiveTypes(new Set(ALL_NODE_TYPES));
+    setActiveEdgeTypes(new Set(ALL_EDGE_TYPES));
+    setFolderScope("");
+  }, []);
+
   const handleNodeSelect = useCallback((nodeId: string | null) => {
-    // file:: nodes are tree-view aggregates — no symbol panel
     if (nodeId?.startsWith("file::")) return;
     setSelectedNodeId(nodeId);
     setImpactNodeId(null);
@@ -141,6 +174,17 @@ function App() {
           {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
         </button>
       </header>
+
+      <FilterBar
+        activeTypes={activeTypes}
+        onToggleType={handleToggleType}
+        activeEdgeTypes={activeEdgeTypes}
+        onToggleEdgeType={handleToggleEdgeType}
+        folderScope={folderScope}
+        onFolderScopeChange={setFolderScope}
+        onReset={handleResetFilters}
+      />
+
       <main style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <GraphView
           searchQuery={searchQuery}
@@ -148,6 +192,9 @@ function App() {
           impactNodeId={impactNodeId}
           onNodeSelect={handleNodeSelect}
           viewMode={viewMode}
+          activeTypes={activeTypes}
+          activeEdgeTypes={activeEdgeTypes}
+          folderScope={folderScope}
         />
         {selectedNodeId && (
           <NodePanel

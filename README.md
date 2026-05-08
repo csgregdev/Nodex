@@ -34,298 +34,103 @@
   <a href="https://github.com/csgregdev/Nodex/issues">Issues</a>
 </p>
 
-> Early-stage package: Nodex is still in a very early, fast-moving phase. Expect rough edges, breaking changes, incomplete docs, and occasional incorrect results. Use it with validation and treat outputs as assistive, not authoritative.
-
-Reads your project → builds a node/edge graph → stores in SQLite → queryable via MCP server, CLI, and a visual graph UI.
-
-**Why Nodex**
-
-- Structural code graph with symbol-level nodes and relationship edges
-- Git intelligence for hotspots, co-change analysis, and decision mining
-- AI-ready access through MCP server, CLI, and visual graph UI
-- Freshness tracking so AI knowledge ages with the code instead of silently drifting
+> **Early-stage:** Fast-moving. Expect rough edges, breaking changes, and incomplete docs. Treat outputs as assistive, not authoritative.
 
 ---
 
-## Why this is useful
+## The story
 
-Most code tools answer one narrow question: search text, inspect AST, summarize files, or visualize dependencies. Nodex combines all four into one local graph so both humans and agents can ask higher-level questions like:
+As a developer who works across large, evolving codebases, I kept running into the same wall: AI assistants — no matter how capable — would lose context, misread structure, or confidently suggest changes that broke things elsewhere. Not because the models were bad, but because they had no real map of the codebase. They were navigating blind.
 
-- What breaks if I change this symbol?
-- Which files are tightly coupled even though imports do not show it?
-- Which important architectural decisions are stale after recent changes?
-- Where is the real complexity hotspot in this repo?
+I looked for a tool that could give an AI assistant a live, structural understanding of a project — something that tracked not just files and symbols, but relationships, git history, architectural decisions, and whether its own knowledge was still fresh. I couldn't find one that worked the way I needed.
 
-## In 30 seconds
-
-```bash
-nodex init
-nodex ui
-nodex mcp
-```
-
-1. `nodex init` indexes structure, git history, and metadata into SQLite.
-2. `nodex ui` opens the graph view for exploring files, symbols, hotspots, and hidden coupling.
-3. `nodex mcp` exposes the knowledge graph to AI tools through MCP.
-
-## What you get
-
-```text
-repo source
-  -> symbols + imports + calls
-  -> git churn + co-change signals
-  -> optional AI summaries + decisions
-  -> SQLite knowledge graph
-  -> queryable via CLI, MCP, and UI
-```
+So I started building Nodex with AI assistance, as a tool to help my own work. It indexes a codebase into a graph, stores it in SQLite, and makes it queryable by both humans (via a visual UI) and AI tools (via MCP). It's what I wished existed when I started.
 
 ---
 
 ## What it does
 
-Nodex indexes your codebase into a structured graph where every file, function, class, and interface is a **node**, and every import, call, inheritance, and co-change relationship is an **edge**. On top of the structural graph, it layers AI-generated summaries, gotchas, and architectural decisions — and tracks whether that AI knowledge is still fresh or has gone stale as your code evolves.
-
-The result: your AI assistant (Claude Code, Cursor, etc.) gets a compact, accurate picture of your codebase instead of reading raw source files. You get a visual map of where complexity lives, which files change together, and what architectural decisions were made.
-
----
-
-## Features
-
-### Structural indexing
-- Parses 13 languages using tree-sitter (TypeScript, JavaScript, Python, Go) and regex (Dart, Rust, Java, Kotlin, Ruby, PHP, Astro)
-- Extracts functions, classes, interfaces, and module-level exports
-- Detects framework context: Next.js, Flutter, Django, FastAPI, Spring, Rails, Angular
-- Respects `.gitignore` — won't index `node_modules`, `dist`, etc.
-- SHA-256 hash-based change detection — skips unchanged files on re-index
-
-### AI enrichment (optional, async)
-- Per-file AI summaries via Claude Haiku — one API call per file, not per function (10× cheaper)
-- Rate-limited queue (configurable req/min, default 10)
-- Priority queue: complex files enriched first
-- Three-state freshness tracking per file: `fresh` / `stale` / `unknown`
-- Stale detection: structural hash tracked separately from AI-seen hash — watcher marks files stale on change without calling AI
-
-### Git intelligence (no AI required)
-- **Co-change analysis**: finds files that regularly change together in the same commit but have no import relationship — hidden coupling your AST can't see
-- **Hotspot score**: `churn × complexity` per file, normalized 0–1 — shows where bugs live
-- **Decision mining**: scans inline `WHY:` / `DECISION:` / `TRADEOFF:` / `FAILED:` markers + git commit messages for architectural decisions
-
-### MCP server
-6 tools for AI assistants:
-- `nodex_search(query)` — full-text search across all symbols
-- `nodex_get_context(file)` — all nodes, edges, meta, co-changes, hotspot score for a file; triggers lazy AI enrichment if summary is missing
-- `nodex_impact_map(node_id)` — what breaks if you change this node (direct + indirect dependents, risk level)
-- `nodex_get_conventions()` — project-wide AI decisions and gotchas
-- `nodex_update_file(file)` — re-index a file after modification
-- `nodex_add_decision(node_id, decision)` — record an architectural decision
-
-### Token usage tracking
-- Logs input/output tokens per operation (enrich, focus, mcp_lazy) to SQLite
-- Cost estimation using Anthropic pricing
-- `nodex tokens` CLI report: total, by operation, by file
-
-### Visual graph UI
-- React + React Flow graph at `http://localhost:3456`
-- Symbol-level and file-tree views
-- Node color/border reflects AI status: grey = unknown, orange border = stale, red = hotspot
-- Co-change edges rendered as dashed orange lines with co-commit count
-- Hotspot score shown as 🔥 badge and border thickness
-- Right-click context menu: Enrich now / Enrich module / Mark stale
-- NodePanel: AI knowledge status, "Enrich now" button, hidden coupling section, decision history with staleness warning
-- Impact map overlay, neighborhood view, dagre layout (LR/TB)
-
----
-
-## Installation
-
-**Requirements:** [Bun](https://bun.sh) ≥ 1.1, Git
-
-```bash
-git clone https://github.com/your-org/nodex
-cd nodex
-bun install
+```
+your project
+  └─▶ symbols + imports + calls (tree-sitter)
+  └─▶ git churn + co-change signals
+  └─▶ AI summaries + decisions (optional)
+        └─▶ SQLite knowledge graph
+              ├─▶ Visual graph UI   (nodex ui)
+              ├─▶ MCP server        (nodex mcp)
+              └─▶ CLI tools         (nodex search, focus, status...)
 ```
 
-Make the CLI available globally:
+Every file, function, class, and interface becomes a **node**. Every import, call, inheritance, and co-change relationship becomes an **edge**. On top of the structural graph, Nodex layers AI summaries and architectural decisions — and tracks whether that knowledge is still fresh or has gone stale as your code evolves.
 
-```bash
-# Option A: bun link
-bun link
-
-# Option B: direct path alias
-alias nodex="bun /path/to/nodex/src/cli/main.ts"
-```
+**Result:** your AI assistant gets a compact, accurate picture of your codebase instead of reading raw source files. You get a visual map of where complexity lives, which files change together, and what decisions were made and why.
 
 ---
 
 ## Quick start
 
+### 1. Install
+
+```bash
+git clone https://github.com/csgregdev/Nodex
+cd nodex
+bun install
+bun link          # makes `nodex` available globally
+```
+
+### 2. Index your project
+
 ```bash
 cd your-project
-
-# 1. Structural index (fast, no API key needed)
 nodex init
+```
 
-# 2. Open the visual graph
+This parses all source files, builds the graph, runs git co-change analysis, and stores everything in `.nodex/db.sqlite`. No API key needed.
+
+### 3. Explore the graph
+
+```bash
 nodex ui
-
-# 3. Check what needs AI enrichment
-nodex status
-
-# 4. Enrich a specific area (needs ANTHROPIC_API_KEY)
-nodex focus src/auth/
-
-# 5. Full enrichment in background
-nodex sync --enrich
+# → opens http://localhost:3456
 ```
+
+The visual graph shows every symbol as a node, color-coded by type, with edges for calls, imports, and hidden coupling. You can:
+
+- **Search** for any symbol or file — graph filters to matching nodes instantly
+- **Filter by type** — toggle `fn` / `class` / `interface` / `module` / `widget` chips
+- **Filter by edge type** — show only `calls`, `imports`, `extends`, etc.
+- **Scope to a folder** — type `src/auth/` to see only that subtree
+- **Double-click** a node to enter neighborhood view (node + direct connections)
+- **Click** a node to open its detail panel: AI summary, decisions, hidden coupling, impact map
+
+### 4. Add AI knowledge (optional)
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+
+nodex focus src/auth/       # enrich a folder
+nodex focus "login flow"    # enrich by intent
+nodex init --enrich         # enrich everything
+```
+
+### 5. Connect to your AI assistant
+
+```bash
+nodex mcp
+# → starts MCP stdio server, expose it in your AI tool config
+```
+
+See [MCP setup](#using-with-ai-tools-mcp) below.
 
 ---
 
-## CLI reference
+## Using with AI tools (MCP)
 
-### `nodex init [--enrich]`
+This is where Nodex really shines. Once connected, your AI assistant can query the knowledge graph directly — searching symbols, checking what breaks if something changes, reading architectural decisions, and keeping the index fresh as files are modified.
 
-Index the current directory. Builds the full graph, computes hotspot scores, runs co-change analysis, and scans inline decision markers.
+### Setup: Claude Code
 
-`--enrich` — after structural indexing, run AI enrichment on all files (rate-limited, blocks until done).
-
-```bash
-nodex init
-nodex init --enrich
-```
-
-### `nodex status`
-
-Shows AI knowledge freshness across the project:
-
-```
-🔴 STALE - AI hasn't seen these changes:
-   src/auth/auth.service.ts          → changed 3 days ago
-   src/payment/stripe.ts             → changed 1 week ago
-
-🟡 OLD knowledge (>30 days):
-   src/user/user.repo.ts             → indexed 45 days ago
-
-🟢 FRESH: 47 files
-
-🔥 Top hotspot files:
-   src/payment/stripe.ts             score: 82%  commits: 23
-
-→ 3 files need enrichment. Run: nodex sync --enrich
-```
-
-### `nodex focus <target>`
-
-Priority AI enrichment — runs immediately, not through the background queue.
-
-```bash
-# By path (directory or file)
-nodex focus src/auth/
-nodex focus src/auth/auth.service.ts
-
-# By symbol
-nodex focus src/auth/auth.service.ts::login
-
-# By intent (FTS search → finds relevant modules → enriches stale ones)
-nodex focus "auth login flow"
-nodex focus "how does payment work"
-```
-
-Shows per-file progress with gotcha counts and a token/cost summary at the end.
-
-### `nodex sync [--enrich]`
-
-Re-indexes files changed since the last git commit. `--enrich` also enriches all stale and unknown files.
-
-```bash
-nodex sync
-nodex sync --enrich
-```
-
-### `nodex watch`
-
-Starts a file watcher (chokidar, 500ms debounce). On file change: re-runs tree-sitter, updates `current_hash`, marks file stale. Does **not** call AI automatically.
-
-```bash
-nodex watch
-```
-
-### `nodex search <query>`
-
-Full-text search across all indexed symbols.
-
-```bash
-nodex search "handleLogin"
-nodex search "stripe webhook"
-```
-
-### `nodex decision`
-
-Manage architectural decisions.
-
-```bash
-nodex decision list                        # all decisions
-nodex decision list --file src/auth/...    # decisions for a file
-nodex decision add --file src/auth/auth.service.ts --key decision "Chose JWT over sessions — stateless required for k8s"
-nodex decision health                      # stale decisions (file changed since decision was recorded)
-nodex decision mine                        # extract decisions from git commit history
-nodex decision mine 500                    # last 500 commits
-```
-
-Inline decision markers are picked up automatically during `nodex init`:
-
-```typescript
-// WHY: Using JWT — stateless auth required for horizontal scaling
-// DECISION: All external calls wrapped in CircuitBreaker after Q3 outages
-// TRADEOFF: Accepted eventual consistency in prefs for write throughput
-// FAILED: Tried Redis pub/sub first, dropped due to ordering guarantees
-```
-
-### `nodex tokens`
-
-Token usage and cost report.
-
-```bash
-nodex tokens                      # total usage, all time
-nodex tokens --by-file            # top 20 most expensive files
-nodex tokens --since=7d           # last 7 days (supports h/d/w)
-nodex tokens --by-file --since=1w
-```
-
-Example output:
-
-```
-Nodex Token Usage (last 7d)
-────────────────────────────────────────────────────
-  Total calls:   42
-  Input tokens:  128.3k
-  Output tokens: 21.7k
-  Total tokens:  150.0k
-  Estimated cost: $0.189
-
-  By operation:
-    enrich               98.4k tokens  $0.146  (35 calls)
-    focus                31.2k tokens  $0.039   (6 calls)
-    mcp_lazy              4.1k tokens  $0.005   (1 call)
-```
-
-### `nodex reindex`
-
-Drops and rebuilds the entire index from scratch.
-
-### `nodex mcp`
-
-Starts the MCP stdio server. Used by Claude Code and other MCP-compatible tools.
-
-### `nodex ui`
-
-Opens the visual graph UI at `http://localhost:3456`.
-
----
-
-## MCP setup (Claude Code)
-
-Add to your Claude Code MCP config (`.claude/mcp.json` or settings):
+Add to `.claude/mcp.json` (or Claude Code settings → MCP):
 
 ```json
 {
@@ -342,81 +147,260 @@ Add to your Claude Code MCP config (`.claude/mcp.json` or settings):
 }
 ```
 
-Then in your project's `CLAUDE.md`:
+### Tell Claude how to use it
+
+Add to your project's `CLAUDE.md`:
 
 ```markdown
-## Nodex Index
-This project is indexed by Nodex. After every file modification, call:
-nodex_update_file({ file: "path/to/modified/file.ts" })
+## Nodex
 
-Key tools:
-- nodex_search(query) — find functions, modules, classes
-- nodex_get_context(file) — full context for a file (triggers lazy AI enrichment if needed)
-- nodex_impact_map(node_id) — what breaks if you change this
-- nodex_add_decision(node_id, decision) — record architectural decisions
+This project is indexed by Nodex. Use these tools to understand the codebase:
+
+- `nodex_search(query)` — find functions, classes, modules by name or description
+- `nodex_get_context(file)` — full structural context for a file: all symbols, edges, decisions, hotspot score
+- `nodex_impact_map(node_id)` — what breaks if you change this node (direct + indirect dependents)
+- `nodex_get_conventions()` — project-wide architectural decisions and gotchas
+- `nodex_add_decision(node_id, decision)` — record an architectural decision after making a significant change
+- `nodex_update_file(file)` — re-index a file after modifying it
+
+After every file you modify, call: nodex_update_file({ file: "relative/path/to/file.ts" })
 ```
+
+### What Claude can now do
+
+| Question | Tool used |
+|----------|-----------|
+| "What does `AuthService` do?" | `nodex_search("AuthService")` → `nodex_get_context` |
+| "What breaks if I change `login()`?" | `nodex_impact_map("src/auth/auth.service.ts::login")` |
+| "Are there any gotchas in payments?" | `nodex_get_context("src/payment/stripe.ts")` |
+| "What architectural decisions were made?" | `nodex_get_conventions()` |
+| "Keep the index updated" | `nodex_update_file(file)` after each edit |
+
+### Setup: Cursor / other MCP clients
+
+Any MCP-compatible client works. Point it at:
+```
+command: bun run /path/to/nodex/src/mcp/server.ts
+env: NODEX_PROJECT=/path/to/your/project
+```
+
+---
+
+## Visual graph UI
+
+Open with `nodex ui` → `http://localhost:3456`
+
+### Node colors
+
+| Type | Color | Icon |
+|------|-------|------|
+| `fn` — function / method | Cyan | `⌥` |
+| `class` — class | Purple | `□` |
+| `interface` — interface | Green | `{}` |
+| `module` — file-level | Yellow | `⊞` |
+| `widget` — Flutter/React component | Orange | `⊡` |
+| `type` — type alias | Gray | `#` |
+
+### AI status indicators
+
+| Border | Meaning |
+|--------|---------|
+| Normal | `fresh` — AI knowledge up to date |
+| Orange border | `stale` — file changed since AI last saw it |
+| Dimmed | `unknown` — never enriched |
+| Cyan pulse | Processing |
+| 🔥 badge | Hotspot — high churn + complexity |
+
+### Filters (filter bar below the header)
+
+| Control | What it does |
+|---------|-------------|
+| Type chips `[fn] [class] ...` | Show/hide nodes by type — click to toggle |
+| Edge chips `[calls] [imports] ...` | Show/hide edges by relationship type |
+| `scope: src/auth/` input | Limit graph to a folder subtree |
+| Reset button | Clear all active filters |
+
+Filters are **hard filters** — matching nodes disappear and the graph re-layouts. A counter shows `142 / 1203 nodes` when active.
+
+### Interactions
+
+| Action | Result |
+|--------|--------|
+| Click node | Open detail panel (summary, decisions, impact) |
+| Double-click node | Neighborhood view — node + direct connections only |
+| Right-click node | Context menu: Enrich now / Enrich module / Mark stale |
+| Search bar | Filter graph to matching symbols/files |
+| `← full graph` button | Exit neighborhood view |
+
+### Views
+
+- **Symbol graph** (default) — every function, class, interface as a node
+- **File tree** — one node per file, edges = cross-file relationships
+
+---
+
+## CLI reference
+
+### `nodex init [--enrich]`
+
+Index the current directory. Parses all source files, builds graph, runs git co-change analysis, scans inline decision markers.
+
+`--enrich` — also run AI enrichment on all files after indexing.
+
+```bash
+nodex init
+nodex init --enrich
+```
+
+### `nodex status`
+
+AI knowledge freshness report:
+
+```
+🔴 STALE — AI hasn't seen these changes:
+   src/auth/auth.service.ts     changed 3 days ago
+   src/payment/stripe.ts        changed 1 week ago
+
+🟡 OLD knowledge (>30 days):
+   src/user/user.repo.ts        indexed 45 days ago
+
+🟢 FRESH: 47 files
+
+🔥 Top hotspots:
+   src/payment/stripe.ts        score: 82%  commits: 23
+
+→ 3 files need enrichment. Run: nodex sync --enrich
+```
+
+### `nodex focus <target>`
+
+Priority AI enrichment — runs immediately.
+
+```bash
+nodex focus src/auth/                      # folder
+nodex focus src/auth/auth.service.ts       # file
+nodex focus src/auth/auth.service.ts::login  # symbol
+nodex focus "auth login flow"              # intent search
+```
+
+### `nodex sync [--enrich]`
+
+Re-indexes files changed since last git commit. `--enrich` also enriches stale files.
+
+### `nodex watch`
+
+File watcher (chokidar, 500ms debounce). Updates structural index on change, marks files stale. Does not call AI automatically.
+
+### `nodex search <query>`
+
+Full-text search across all symbols.
+
+```bash
+nodex search "handleLogin"
+nodex search "stripe webhook"
+```
+
+### `nodex decision`
+
+```bash
+nodex decision list                             # all decisions
+nodex decision list --file src/auth/...         # by file
+nodex decision add --file src/auth/auth.service.ts \
+  --key decision "Chose JWT — stateless for k8s"
+nodex decision health                           # stale decisions
+nodex decision mine                             # extract from git history
+```
+
+Inline markers picked up automatically during `nodex init`:
+
+```typescript
+// WHY: JWT — stateless auth required for horizontal scaling
+// DECISION: All external calls wrapped in CircuitBreaker after Q3 outage
+// TRADEOFF: Eventual consistency in prefs for write throughput
+// FAILED: Tried Redis pub/sub first — ordering guarantees were a problem
+```
+
+### `nodex tokens`
+
+Token usage report.
+
+```bash
+nodex tokens
+nodex tokens --by-file
+nodex tokens --since=7d
+```
+
+### `nodex reindex`
+
+Drop and rebuild the entire index from scratch.
+
+### `nodex ui`
+
+Open visual graph at `http://localhost:3456`.
+
+### `nodex mcp`
+
+Start MCP stdio server (used by Claude Code and other MCP clients).
+
+---
+
+## Features
+
+### Structural indexing
+- 13 languages: tree-sitter (TypeScript, JavaScript, Python, Go) + regex (Dart, Rust, Java, Kotlin, Ruby, PHP, Astro, Swift)
+- Extracts functions, classes, interfaces, module-level exports
+- Framework detection: Next.js, Flutter, Django, FastAPI, Spring, Rails, Angular
+- Respects `.gitignore`
+- SHA-256 hash-based change detection — skips unchanged files
+
+### AI enrichment (optional)
+- Per-file summaries via Claude Haiku — one API call per file, not per function
+- Rate-limited queue (configurable req/min)
+- Priority: complex files enriched first
+- Three-state freshness: `fresh` / `stale` / `unknown`
+
+### Git intelligence (no AI needed)
+- **Co-change analysis** — files that change together in commits but have no import relationship (hidden coupling)
+- **Hotspot score** — churn × complexity, normalized 0–1
+- **Decision mining** — inline markers + git commit message scanning
+
+### MCP server (6 tools)
+- `nodex_search` — full-text symbol search
+- `nodex_get_context` — all nodes, edges, meta for a file; lazy AI enrichment if needed
+- `nodex_impact_map` — direct + indirect dependents, risk level
+- `nodex_get_conventions` — project-wide decisions and gotchas
+- `nodex_update_file` — re-index a file after modification
+- `nodex_add_decision` — record an architectural decision
 
 ---
 
 ## Data model
 
-### `nodes` table
+### nodes
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | TEXT | `"file::symbolName"` (e.g. `src/auth/auth.service.ts::login`) |
-| `type` | TEXT | `fn`, `class`, `interface`, `module`, `widget` |
-| `name` | TEXT | Symbol name (`__module__` for file-level node) |
-| `file` | TEXT | Relative file path |
-| `line` | INTEGER | Line number |
-| `language` | TEXT | Detected language |
-| `token` | TEXT | Caveman format — mechanically derived from AST |
-| `summary` | TEXT | AI-generated summary (NULL = never enriched) |
-| `complexity` | INTEGER | Cyclomatic complexity |
-| `hash` | TEXT | File hash when AI last ran — staleness baseline |
-| `current_hash` | TEXT | File hash after last tree-sitter parse — always current |
-| `last_parsed` | INTEGER | Unix timestamp of last tree-sitter parse |
-| `last_ai` | INTEGER | Unix timestamp of last AI enrichment |
-| `hotspot_score` | REAL | 0.0–1.0 churn × complexity (module nodes only) |
-| `commit_count` | INTEGER | Git commits in last 90 days |
+| Field | Description |
+|-------|-------------|
+| `id` | `"file::symbolName"` |
+| `type` | `fn`, `class`, `interface`, `module`, `widget`, `type` |
+| `token` | Compact caveman format (AI-free, AST-derived) |
+| `summary` | AI summary (NULL = never enriched) |
+| `hash` | File hash when AI last ran |
+| `current_hash` | File hash after last parse |
+| `hotspot_score` | 0–1 churn × complexity |
 
-**AI freshness states:**
+### edges
 
-| State | Condition |
-|-------|-----------|
-| `fresh` | `hash == current_hash` AND `last_ai NOT NULL` |
-| `stale` | `hash != current_hash` AND `last_ai NOT NULL` |
-| `unknown` | `last_ai IS NULL` |
+| relationship | Meaning |
+|-------------|---------|
+| `calls` | Function/method calls |
+| `imports` | Module imports |
+| `extends` | Class inheritance |
+| `implements` | Interface implementation |
+| `co_changes` | Files that change together in git |
 
-### `edges` table
+### Token format (caveman)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `from_id` | TEXT | Source node ID |
-| `to_id` | TEXT | Target node ID |
-| `relationship` | TEXT | `calls`, `imports`, `extends`, `implements`, `co_changes` |
-| `weight` | INTEGER | Co-commit count (co_changes edges only) |
-
-### `meta` table
-
-Key/value store attached to nodes. Keys: `gotcha`, `ai_decision`, `why`, `decision`, `tradeoff`, `failed_approach`, `git_decision`.
-
-### `token_usage` table
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `operation` | TEXT | `enrich`, `focus`, `mcp_lazy` |
-| `file` | TEXT | Which file was processed |
-| `input_tokens` | INTEGER | API input tokens |
-| `output_tokens` | INTEGER | API output tokens |
-| `model` | TEXT | Model ID used |
-| `created` | INTEGER | Unix timestamp |
-
----
-
-## Token format (caveman)
-
-The `token` field is a compact, AI-free representation of each symbol, derived mechanically from AST data:
+Compact representation packed into minimum tokens for LLM context:
 
 ```
 fn:        name(param,param)→returnType
@@ -425,80 +409,22 @@ interface: IName
 module:    [file.ts]|fw:nextjs|exports:A,B,C
 ```
 
-This format is designed to pack maximum structural information into minimum tokens when passed to an LLM.
-
 ---
 
 ## Environment variables
 
 | Variable | Description |
 |----------|-------------|
-| `ANTHROPIC_API_KEY` | Required for AI enrichment (`nodex init --enrich`, `nodex focus`, `nodex sync --enrich`) |
-| `NODEX_PROJECT` | Project root for MCP server (defaults to `cwd`) |
+| `ANTHROPIC_API_KEY` | Required for AI enrichment |
+| `NODEX_PROJECT` | Project root for MCP server (defaults to cwd) |
 | `PORT` | UI server port (default `3456`) |
-
----
-
-## Architecture
-
-```
-src/
-├── indexer/
-│   ├── walker.ts         gitignore-aware async file traversal
-│   ├── parser.ts         tree-sitter (TS/JS/Python/Go) + regex (others)
-│   ├── graph.ts          parsed file → SQLite nodes/edges
-│   ├── differ.ts         SHA-256 hash-based change detection
-│   ├── git.ts            co-change analysis, hotspot scores, ownership
-│   ├── decisions.ts      inline marker scan, git commit mining, staleness
-│   └── languages/        13 language configs + framework hint detection
-├── store/
-│   ├── db.ts             DB init, schema, WAL mode, migrations
-│   ├── nodes.ts          node CRUD + status helpers (fresh/stale/unknown)
-│   ├── edges.ts          edge CRUD
-│   ├── meta.ts           meta k/v + project settings
-│   └── token_usage.ts    token logging + cost calculation
-├── summarizer/
-│   ├── ai.ts             Claude Haiku API, returns usage counts
-│   ├── cache.ts          hash-based skip logic
-│   ├── queue.ts          rate-limited enrichment queue, priority by complexity
-│   └── formatter.ts      local caveman token formatter
-├── watcher/
-│   └── fswatch.ts        chokidar + 500ms debounce, updates current_hash only
-├── mcp/
-│   ├── server.ts         MCP stdio server
-│   └── tools/            search, context (lazy AI), impact, conventions, update, decision
-├── api/
-│   └── server.ts         Hono HTTP API (12 endpoints) + Bun.serve() SPA
-└── cli/
-    ├── main.ts            CLI dispatcher
-    ├── init.ts            full index + git analysis + decision scan
-    ├── reindex.ts         drop + rebuild
-    ├── watch.ts           background file watcher
-    ├── sync.ts            git diff incremental update + --enrich
-    ├── status.ts          AI freshness report + hotspot summary
-    ├── focus.ts           priority enrichment (path/symbol/intent)
-    ├── decision.ts        decision add/list/health/mine
-    ├── tokens.ts          token usage + cost report
-    ├── search.ts          terminal search
-    └── ui.ts              visual UI launcher
-
-ui/
-├── index.html
-└── src/
-    ├── App.tsx
-    └── components/
-        ├── Graph.tsx       React Flow graph, AI status colors, co-change edges, context menu
-        ├── NodePanel.tsx   AI status section, enrich button, co-change coupling, decisions
-        ├── SearchBar.tsx   debounced FTS search
-        └── StatsBar.tsx    file/symbol/edge stats
-```
 
 ---
 
 ## Supported languages
 
-| Language | Parser | Frameworks detected |
-|----------|--------|---------------------|
+| Language | Parser | Frameworks |
+|----------|--------|------------|
 | TypeScript | tree-sitter | Next.js, Angular |
 | JavaScript | tree-sitter | Next.js |
 | Python | tree-sitter | Django, FastAPI, Flask |
@@ -511,6 +437,59 @@ ui/
 | Swift | regex | — |
 | Ruby | regex | Rails |
 | PHP | regex | — |
+
+---
+
+## Architecture
+
+```
+src/
+├── indexer/
+│   ├── walker.ts         gitignore-aware file traversal
+│   ├── parser.ts         tree-sitter + regex parsers
+│   ├── graph.ts          parsed file → SQLite nodes/edges
+│   ├── differ.ts         SHA-256 change detection
+│   ├── git.ts            co-change analysis, hotspot scores
+│   ├── decisions.ts      inline marker scan + git commit mining
+│   └── languages/        13 language configs
+├── store/
+│   ├── db.ts             SQLite init, schema, WAL mode
+│   ├── nodes.ts          node CRUD + freshness helpers
+│   ├── edges.ts          edge CRUD
+│   ├── meta.ts           meta k/v + project settings
+│   └── token_usage.ts    token logging + cost calculation
+├── summarizer/
+│   ├── ai.ts             Claude Haiku API
+│   ├── cache.ts          hash-based skip logic
+│   ├── queue.ts          rate-limited enrichment queue
+│   └── formatter.ts      caveman token formatter
+├── watcher/
+│   └── fswatch.ts        chokidar + 500ms debounce
+├── mcp/
+│   ├── server.ts         MCP stdio server
+│   └── tools/            6 tools
+├── api/
+│   └── server.ts         Hono HTTP API + Bun.serve() SPA
+└── cli/
+    ├── main.ts            dispatcher
+    ├── init.ts            full index + git + decisions
+    ├── sync.ts            git diff incremental update
+    ├── status.ts          freshness report
+    ├── focus.ts           priority enrichment
+    ├── decision.ts        decision management
+    ├── tokens.ts          token usage report
+    └── ui.ts              UI launcher
+
+ui/
+└── src/
+    ├── App.tsx             filter state, layout
+    └── components/
+        ├── Graph.tsx       React Flow graph + physics layout + filter engine
+        ├── FilterBar.tsx   type/edge/scope filter chips
+        ├── NodePanel.tsx   AI status, decisions, coupling, impact
+        ├── SearchBar.tsx   debounced FTS search
+        └── StatsBar.tsx    file/symbol/edge counts
+```
 
 ---
 
