@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@csgreg.dev/nodex">
+  <a href="https://www.npmjs.com/package/@csgregdev/nodex">
     <img src="https://img.shields.io/npm/v/%40csgreg.dev%2Fnodex?color=0f766e&label=npm" alt="npm version" />
   </a>
   <a href="https://bun.sh">
@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@csgreg.dev/nodex">npm</a>
+  <a href="https://www.npmjs.com/package/@csgregdev/nodex">npm</a>
   ·
   <a href="https://github.com/csgregdev/Nodex">GitHub</a>
   ·
