@@ -1,10 +1,83 @@
-# Nodex
+<p align="center">
+  <img src="https://raw.githubusercontent.com/csgregdev/Nodex/main/assets/logo.png" alt="Nodex logo" width="180" />
+</p>
 
-![Nodex](assets/logo.png)
+<h1 align="center">Nodex</h1>
 
-Live, graph-based codebase knowledge store for CLI developers and AI tools.
+<p align="center">
+  Live, graph-based codebase knowledge store for CLI developers and AI tools.
+</p>
+
+<p align="center">
+  Index files, symbols, relationships, git history, and AI summaries into a queryable SQLite graph.
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@csgreg.dev/nodex">
+    <img src="https://img.shields.io/npm/v/%40csgreg.dev%2Fnodex?color=0f766e&label=npm" alt="npm version" />
+  </a>
+  <a href="https://bun.sh">
+    <img src="https://img.shields.io/badge/runtime-Bun-f7df1e?labelColor=111827&color=f7df1e" alt="Bun runtime" />
+  </a>
+  <a href="https://github.com/csgregdev/Nodex/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/csgregdev/Nodex?color=1f2937" alt="MIT license" />
+  </a>
+  <img src="https://img.shields.io/badge/MCP-ready-0ea5e9" alt="MCP ready" />
+  <img src="https://img.shields.io/badge/storage-SQLite-2563eb" alt="SQLite storage" />
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@csgreg.dev/nodex">npm</a>
+  ·
+  <a href="https://github.com/csgregdev/Nodex">GitHub</a>
+  ·
+  <a href="https://github.com/csgregdev/Nodex/issues">Issues</a>
+</p>
+
+> Early-stage package: Nodex is still in a very early, fast-moving phase. Expect rough edges, breaking changes, incomplete docs, and occasional incorrect results. Use it with validation and treat outputs as assistive, not authoritative.
 
 Reads your project → builds a node/edge graph → stores in SQLite → queryable via MCP server, CLI, and a visual graph UI.
+
+**Why Nodex**
+
+- Structural code graph with symbol-level nodes and relationship edges
+- Git intelligence for hotspots, co-change analysis, and decision mining
+- AI-ready access through MCP server, CLI, and visual graph UI
+- Freshness tracking so AI knowledge ages with the code instead of silently drifting
+
+---
+
+## Why this is useful
+
+Most code tools answer one narrow question: search text, inspect AST, summarize files, or visualize dependencies. Nodex combines all four into one local graph so both humans and agents can ask higher-level questions like:
+
+- What breaks if I change this symbol?
+- Which files are tightly coupled even though imports do not show it?
+- Which important architectural decisions are stale after recent changes?
+- Where is the real complexity hotspot in this repo?
+
+## In 30 seconds
+
+```bash
+nodex init
+nodex ui
+nodex mcp
+```
+
+1. `nodex init` indexes structure, git history, and metadata into SQLite.
+2. `nodex ui` opens the graph view for exploring files, symbols, hotspots, and hidden coupling.
+3. `nodex mcp` exposes the knowledge graph to AI tools through MCP.
+
+## What you get
+
+```text
+repo source
+  -> symbols + imports + calls
+  -> git churn + co-change signals
+  -> optional AI summaries + decisions
+  -> SQLite knowledge graph
+  -> queryable via CLI, MCP, and UI
+```
 
 ---
 
@@ -443,4 +516,4 @@ ui/
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).

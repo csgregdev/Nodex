@@ -1,6 +1,6 @@
 {
   "name": "@csgreg.dev/nodex",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Live graph-based codebase knowledge store for CLI developers and AI tools",
   "module": "index.ts",
   "type": "module",
@@ -17,7 +17,23 @@
   "engines": {
     "bun": ">=1.1.0"
   },
-  "keywords": ["codebase", "knowledge-graph", "mcp", "ai", "claude", "sqlite", "indexer"],
+  "homepage": "https://github.com/csgregdev/Nodex#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/csgregdev/Nodex.git"
+  },
+  "bugs": {
+    "url": "https://github.com/csgregdev/Nodex/issues"
+  },
+  "keywords": [
+    "codebase",
+    "knowledge-graph",
+    "mcp",
+    "ai",
+    "claude",
+    "sqlite",
+    "indexer"
+  ],
   "license": "MIT",
   "scripts": {
     "dev": "bun --hot src/cli/main.ts",
