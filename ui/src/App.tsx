@@ -64,7 +64,7 @@ function App() {
     () => new Set(ALL_NODE_TYPES)
   );
   const [activeEdgeTypes, setActiveEdgeTypes] = useState<Set<string>>(
-    () => new Set(ALL_EDGE_TYPES)
+    () => new Set(ALL_EDGE_TYPES.filter(t => t !== "co_changes"))
   );
   const [folderScope, setFolderScope] = useState("");
 

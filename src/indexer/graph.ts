@@ -46,9 +46,16 @@ export function indexFile(parsed: ParsedFile, fileHash: string): void {
   for (const imp of parsed.imports) {
     if (imp.isRelative) {
       const fromDir = parsed.file.split("/").slice(0, -1).join("/");
-      const resolved = resolveRelativePath(fromDir, imp.from);
+      const resolved = resolveRelativePath(fromDir, imp.from, parsed.language);
       const toModuleId = `${resolved}::__module__`;
       insertEdge({ from_id: moduleId, to_id: toModuleId, relationship: "imports" });
+    } else if (parsed.language === "dart" && imp.from.startsWith("package:")) {
+      // Flutter package imports: package:appname/path/to/file.dart → lib/path/to/file.dart
+      const withoutPackage = imp.from.replace(/^package:[^/]+\//, "lib/");
+      if (withoutPackage !== imp.from) {
+        const toModuleId = `${withoutPackage}::__module__`;
+        insertEdge({ from_id: moduleId, to_id: toModuleId, relationship: "imports" });
+      }
     }
   }
 }
@@ -82,7 +89,7 @@ function generateToken(sym: ParsedSymbol): string {
   }
 }
 
-function resolveRelativePath(fromDir: string, importPath: string): string {
+function resolveRelativePath(fromDir: string, importPath: string, language?: string): string {
   const parts = fromDir ? fromDir.split("/") : [];
   const segments = importPath.replace(/^\.\//, "").split("/");
   for (const seg of segments) {
@@ -90,7 +97,10 @@ function resolveRelativePath(fromDir: string, importPath: string): string {
     else if (seg !== ".") parts.push(seg);
   }
   const path = parts.join("/");
-  // If no extension, assume .ts
-  if (!path.match(/\.\w+$/)) return path + ".ts";
+  // If no extension, infer based on language
+  if (!path.match(/\.\w+$/)) {
+    if (language === "dart") return path + ".dart";
+    return path + ".ts";
+  }
   return path;
 }
